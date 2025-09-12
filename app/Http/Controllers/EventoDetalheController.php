@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreEventoDetalheRequest;
+use App\Http\Requests\UpdateEventoDetalheRequest;
 use App\Models\Event;
 use App\Models\EventoDetalhe;
 use Illuminate\Http\Request;
@@ -30,19 +32,11 @@ class EventoDetalheController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreEventoDetalheRequest $request)
     {
-        $data = $request->validate([
-            'evento_id' => 'required|exists:eventos,id',
-            'descricao' => 'required|string',
-            'data' => 'required|date',
-            'hora_inicio' => 'required',
-            'hora_fim' => 'required',
-            'modalidade' => 'required|string|max:100',
-            'capacidade' => 'nullable|integer',
-        ]);
+        
 
-        EventoDetalhe::create($data);
+        EventoDetalhe::create($request->validated());
 
         return redirect()->route('eventos-detalhes.index')->with('success', 'Detalhe criado com sucesso!');
     }
@@ -69,21 +63,10 @@ class EventoDetalheController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(UpdateEventoDetalheRequest $request, $id)
     {
         $detalhe = EventoDetalhe::findOrFail($id);
-
-        $data = $request->validate([
-            'descricao' => 'sometimes|string',
-            'data' => 'sometimes|date',
-            'hora_inicio' => 'sometimes',
-            'hora_fim' => 'sometimes',
-            'modalidade' => 'sometimes|string|max:100',
-            'capacidade' => 'nullable|integer',
-
-        ]);
-
-        $detalhe->update($data);
+        $detalhe->update($request->validated());
 
         return redirect()->route('eventos-detalhes.index')->with('success', 'Detalhe atualizado com sucesso!');
     }

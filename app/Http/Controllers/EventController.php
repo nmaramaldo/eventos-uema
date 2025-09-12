@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreEventRequest;
 use App\Models\Event;
 use Illuminate\Http\Request;
 
@@ -13,6 +14,7 @@ class EventController extends Controller
     public function index()
     {
         $eventos = Event::with(['detalhes', 'coordenador'])->get();
+
         return view('eventos.index', compact('eventos'));
     }
 
@@ -28,22 +30,10 @@ class EventController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreEventRequest $request)
     {
-        $data = $request->validate([
-            'coordenador_id' => 'required|exists:users,id',
-            'nome' => 'required|string|max:255',
-            'descricao' => 'required|string',
-            'data_inicio_evento' => 'required|date',
-            'data_fim_evento' => 'required|date',
-            'data_inicio_inscricao' => 'required|date',
-            'data_fim_inscricao' => 'required|date',
-            'tipo_evento' => 'required|string|max:100',
-            'logomarca_url' => 'nullable|string',
-            'status' => 'required|string|max:50',
-        ]);
 
-        $evento = Event::create($data);
+        $evento = Event::create($request->validated());
 
         return redirect()->route('eventos.index')->with('success', 'Evento criado com sucesso!');
     }
@@ -70,23 +60,10 @@ class EventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(StoreEventRequest $request, $id)
     {
         $evento = Event::findOrFail($id);
-
-        $data = $request->validate([
-            'nome' => 'sometimes|string|max:255',
-            'descricao' => 'sometimes|string',
-            'data_inicio_evento' => 'sometimes|date',
-            'data_fim_evento' => 'sometimes|date',
-            'data_inicio_inscricao' => 'sometimes|date',
-            'data_fim_inscricao' => 'sometimes|date',
-            'tipo_evento' => 'sometimes|string|max:100',
-            'logomarca_url' => 'nullable|string',
-            'status' => 'sometimes|string|max:50',
-        ]);
-
-        $evento->update($data);
+        $evento->update($request->validated());
 
         return redirect()->route('eventos.index')->with('success', 'Evento atualizado com sucesso!');
     }
