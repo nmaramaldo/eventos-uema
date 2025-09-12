@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEventRequest;
+use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
 use Illuminate\Http\Request;
 
@@ -60,7 +61,7 @@ class EventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(StoreEventRequest $request, $id)
+    public function update(UpdateEventRequest $request, $id)
     {
         $evento = Event::findOrFail($id);
         $evento->update($request->validated());
