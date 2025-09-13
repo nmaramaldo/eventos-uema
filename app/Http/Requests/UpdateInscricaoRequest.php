@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateEventoDetalheRequest extends FormRequest
+class UpdateInscricaoRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,12 +22,11 @@ class UpdateEventoDetalheRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'descricao' => 'sometimes|string',
-            'data' => 'sometimes|date',
-            'hora_inicio' => 'sometimes',
-            'hora_fim' => 'sometimes|after:hora_inicio',
-            'modalidade' => 'sometimes|string|max:100',
-            'capacidade' => 'sometimes|nullable|integer',
+            'user_id' => 'sometimes|uuid|exists:users,id',
+            'evento_id' => 'sometimes|uuid|exists:eventos,id',
+            'status' => 'sometimes|string|in:pendente,aprovado,cancelado',
+            'data_inscricao' => 'sometimes|date',
+            'presente' => 'sometimes|boolean',
         ];
     }
 }

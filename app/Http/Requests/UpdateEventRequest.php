@@ -22,15 +22,15 @@ class UpdateEventRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nome' => 'sometimes|required|string|max:255',
-            'descricao' => 'sometimes|required|string',
-            'data_inicio_evento' => 'sometimes|required|date',
-            'data_fim_evento' => 'sometimes|required|date|after_or_equal:data_inicio_evento',
-            'data_inicio_inscricao' => 'sometimes|required|date',
-            'data_fim_inscricao' => 'sometimes|required|date|after_or_equal:data_inicio_inscricao',
-            'tipo_evento' => 'sometimes|required|string|max:50',
+            'nome' => 'sometimes|string|max:255',
+            'descricao' => 'sometimes|string',
+            'data_inicio_evento' => 'sometimes|date',
+            'data_fim_evento' => 'sometimes|date|after_or_equal:data_inicio_evento',
+            'data_inicio_inscricao' => 'sometimes|date',
+            'data_fim_inscricao' => 'sometimes|date|after_or_equal:data_inicio_inscricao',
+            'tipo_evento' => 'sometimes|string|max:50',
             'logomarca_url' => 'sometimes|nullable|string',
-            'status' => 'sometimes|required|string|max:50',
+            'status' => 'sometimes|string|max:50',
         ];
     }
 }

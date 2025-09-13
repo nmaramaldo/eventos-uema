@@ -20,9 +20,15 @@ class EventoDetalhe extends Model
         'capacidade',
     ];
 
+    protected $casts = [
+        'data' => 'date',
+        'hora_inicio' => 'datetime:H:i',
+        'hora_fim' => 'datetime:H:i',
+        'capacidade' => 'integer',
+    ];
+
     public function evento()
     {
         return $this->belongsTo(Event::class, 'evento_id', 'id');
     }
 }
-

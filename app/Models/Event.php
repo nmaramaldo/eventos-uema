@@ -14,13 +14,13 @@ class Event extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'coodernador_id',
+        'coordenador_id',
         'nome',
         'descricao',
         'data_inicio_evento',
         'data_fim_evento',
         'data_inicio_inscricao',
-        'data_fim_incricao',
+        'data_fim_inscricao',
         'tipo_evento',
         'logomarca_url',
         'status',
@@ -31,9 +31,14 @@ class Event extends Model
         return $this->hasMany(EventoDetalhe::class, 'evento_id', 'id');
     }
 
-    public function coodernador() 
+    public function coordenador() 
     {
         return $this->belongsTo(User::class, 'coordenador_id', 'id');
+    }
+
+    public function inscricoes() 
+    {
+        return $this->hasMany(Inscricao::class, 'evento_id', 'id');
     }
 }
 

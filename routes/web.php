@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventoDetalheController;
+use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::resource('eventos', EventController::class);
     Route::resource('eventos-detalhes', EventoDetalheController::class);
+    Route::resource('inscricoes',InscricaoController::class);
 });
 
 require __DIR__ . '/auth.php';
