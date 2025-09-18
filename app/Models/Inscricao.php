@@ -10,8 +10,6 @@ class Inscricao extends Model
     use HasFactory;
 
     protected $table = 'inscricoes';
-    protected $keyType = 'string';
-    public $incrementing = false;
 
     protected $fillable = [
         'user_id',
@@ -34,5 +32,10 @@ class Inscricao extends Model
     public function evento()
     {
         return $this->belongsTo(Event::class, 'evento_id');
+    }
+
+    public function certificado() 
+    {
+        return $this->hasOne(Certificado::class);
     }
 }

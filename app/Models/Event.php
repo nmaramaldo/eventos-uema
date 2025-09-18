@@ -26,19 +26,28 @@ class Event extends Model
         'status',
     ];
 
-    public function detalhes() 
+    public function detalhes()
     {
         return $this->hasMany(EventoDetalhe::class, 'evento_id', 'id');
     }
 
-    public function coordenador() 
+    public function coordenador()
     {
         return $this->belongsTo(User::class, 'coordenador_id', 'id');
     }
 
-    public function inscricoes() 
+    public function inscricoes()
     {
         return $this->hasMany(Inscricao::class, 'evento_id', 'id');
     }
-}
 
+    public function palestrantes()
+    {
+        return $this->belongsToMany(
+            Palestrante::class,
+            'evento_palestrante', 
+            'evento_id',          
+            'palestrante_id'
+        );
+    }
+}

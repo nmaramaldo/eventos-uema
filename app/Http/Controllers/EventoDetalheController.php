@@ -17,7 +17,7 @@ class EventoDetalheController extends Controller
     public function index()
     {
         $detalhes = EventoDetalhe::with('evento')->get();
-        return view('eventos-detalhes.index', compact('detalhes'));
+        return view('eventos_detalhes.index', compact('detalhes'));
     }
 
     /**
@@ -26,7 +26,7 @@ class EventoDetalheController extends Controller
     public function create()
     {
         $eventos = Event::all();
-        return view('eventos-detalhes.create', compact('eventos'));
+        return view('eventos_detalhes.create', compact('eventos'));
     }
 
     /**
@@ -38,7 +38,7 @@ class EventoDetalheController extends Controller
 
         EventoDetalhe::create($request->validated());
 
-        return redirect()->route('eventos-detalhes.index')->with('success', 'Detalhe criado com sucesso!');
+        return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe criado com sucesso!');
     }
 
     /**
@@ -47,7 +47,7 @@ class EventoDetalheController extends Controller
     public function show($id)
     {
         $detalhe = EventoDetalhe::with('evento')->findOrFail($id);
-        return view('eventos-detalhes.show', compact('detalhe'));
+        return view('eventos_detalhes.show', compact('detalhe'));
     }
 
     /**
@@ -57,7 +57,7 @@ class EventoDetalheController extends Controller
     {
         $detalhe = EventoDetalhe::findOrFail($id);
         $eventos = Event::all(); // Lista de eventos para selecionar
-        return view('eventos-detalhes.edit', compact('detalhe', 'eventos'));
+        return view('eventos_detalhes.edit', compact('detalhe', 'eventos'));
     }
 
     /**
@@ -68,7 +68,7 @@ class EventoDetalheController extends Controller
         $detalhe = EventoDetalhe::findOrFail($id);
         $detalhe->update($request->validated());
 
-        return redirect()->route('eventos-detalhes.index')->with('success', 'Detalhe atualizado com sucesso!');
+        return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe atualizado com sucesso!');
     }
 
     /**
@@ -79,6 +79,6 @@ class EventoDetalheController extends Controller
         $detalhe = EventoDetalhe::findOrFail($id);
         $detalhe->delete();
 
-        return redirect()->route('eventos-detalhes.index')->with('success', 'Detalhe deletado com sucesso!');
+        return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe deletado com sucesso!');
     }
 }

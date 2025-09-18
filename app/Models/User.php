@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use PhpParser\Node\Expr\FuncCall;
 
 class User extends Authenticatable
 {
@@ -54,5 +55,10 @@ class User extends Authenticatable
     public function eventosCoordenados()
     {
         return $this->hasMany(Event::class, 'coordenador_id', 'id');
+    }
+
+    public function notificacoes()
+    {
+        return $this->hasMany(Notificacao::class);
     }
 }

@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('palestrantes', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('nome');
             $table->text('biografia')->nullable();
             $table->text('foto_url')->nullable();
