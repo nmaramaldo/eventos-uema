@@ -8,17 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('evento_palestrante', function (Blueprint $table) {
+        Schema::create('palestrantes', function (Blueprint $table) {
+            $table->uuid('id')->primary(); 
             $table->foreignUuid('evento_id')->constrained('eventos')->onDelete('cascade');
-            $table->foreignUuid('palestrante_id')->constrained('palestrantes')->onDelete('cascade');
+            $table->string('nome');
+            $table->text('biografia');
+            $table->string('foto_url')->nullable();
             $table->timestamps();
-
-            $table->primary(['evento_id', 'palestrante_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('evento_palestrante');
+        Schema::dropIfExists('palestrantes');
     }
 };

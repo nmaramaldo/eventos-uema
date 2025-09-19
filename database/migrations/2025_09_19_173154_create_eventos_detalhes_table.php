@@ -1,5 +1,4 @@
 <?php
-// ... create_eventos_detalhes_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -10,14 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('eventos_detalhes', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary(); // Alterado para UUID
             $table->foreignUuid('evento_id')->constrained('eventos')->onDelete('cascade');
             $table->text('descricao');
             $table->date('data');
             $table->time('hora_inicio');
             $table->time('hora_fim');
             $table->string('modalidade');
-            $table->integer('capacidade')->nullable();
+            $table->integer('capacidade');
+            $table->string('localidade');
             $table->timestamps();
         });
     }
