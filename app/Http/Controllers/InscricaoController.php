@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateInscricaoRequest;
 use App\Models\Event;
 use App\Models\Inscricao;
 use App\Models\User;
+use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class InscricaoController extends Controller
@@ -16,7 +18,10 @@ class InscricaoController extends Controller
      */
     public function index()
     {
-        $inscricoes = Inscricao::with(['user', 'evento'])->get();
+        $inscricoes = Inscricao::with(['event'])
+            ->where('user_id', auth()->guard('web')->id())
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return view('inscricoes.index', compact('inscricoes'));
     }
@@ -26,9 +31,11 @@ class InscricaoController extends Controller
      */
     public function create()
     {
-        $users = User::all();
-        $eventos = Event::all();
-        return view('inscricoes.create', compact('users', 'eventos'));
+        $eventos = Event::where('data', '>=', now())
+            ->orderBy('data', 'asc')
+            ->get();
+
+        return view('inscricoes.create', compact('eventos'));
     }
 
     /**
@@ -36,9 +43,31 @@ class InscricaoController extends Controller
      */
     public function store(StoreInscricaoRequest $request)
     {
-        $inscricao = Inscricao::create($request->validated());
+        $validated = $request->validated();
+        $validated['user_id'] = auth()->guard('web')->id();
 
-        return redirect()->route('inscricoes.index')->with('success', 'Inscriçao criada com sucesso');
+        try {
+            $existingInscricao = Inscricao::where('user_id', $validated['user_id'])
+
+                ->where('event_id', $validated['event_id'])
+                ->first();
+
+            if ($existingInscricao) {
+                return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
+            }
+
+            $inscricao = Inscricao::create($validated);
+
+            return redirect()->route('inscricoes.index')->with('success', 'Inscrição criada com sucesso');
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
+            }
+            return back()->withErrors(['error' => 'Erro ao processar a inscrição']);
+        } catch (Exception $e) {
+
+            return back()->withErrors(['error' => 'Erro ao processar a inscrição']);
+        }
     }
 
     /**
@@ -46,7 +75,11 @@ class InscricaoController extends Controller
      */
     public function show(Inscricao $inscricao)
     {
-        $inscricao->load(['user', 'evento']);
+        if ($inscricao->user_id !== auth()->guard('web')->id()) {
+            abort(403, 'Acesso não autorizado');
+        }
+
+        $inscricao->load(['user', 'event']);
         return view('inscricoes.show', compact('inscricao'));
     }
 
@@ -55,9 +88,12 @@ class InscricaoController extends Controller
      */
     public function edit(Inscricao $inscricao)
     {
-        $users = User::all();
-        $eventos = Event::all();
-        return view('inscricoes.edit', compact('inscricao', 'users', 'eventos'));
+        if ($inscricao->user_id !== auth()->guard('web')->id()) {
+            abort(403, 'Acesso não autorizado');
+        }
+
+        $eventos = Event::where('data', '>=', now())->get();
+        return view('inscricoes.edit', compact('inscricao', 'eventos'));
     }
 
     /**
@@ -65,6 +101,10 @@ class InscricaoController extends Controller
      */
     public function update(UpdateInscricaoRequest $request, Inscricao $inscricao)
     {
+        if ($inscricao->user_id !== auth()->guard('web')->id()) {
+            abort(403, 'Acesso não autorizado');
+        }
+
         $inscricao->update($request->validated());
 
         return redirect()->route('inscricoes.index')->with('success', 'Inscrição atualizada com sucesso!');
@@ -75,6 +115,10 @@ class InscricaoController extends Controller
      */
     public function destroy(Inscricao $inscricao)
     {
+        if ($inscricao->user_id !== auth()->guard('web')->id()) {
+            abort(403, 'Acesso não autorizado');
+        }
+
         $inscricao->delete();
 
         return redirect()->route('inscricoes.index')->with('success', 'Inscrição deletada com sucesso!');

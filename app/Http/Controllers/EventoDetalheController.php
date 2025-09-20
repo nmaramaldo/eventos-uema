@@ -7,7 +7,7 @@ use App\Http\Requests\UpdateEventoDetalheRequest;
 use App\Models\Event;
 use App\Models\EventoDetalhe;
 use Illuminate\Http\Request;
-use Symfony\Component\VarDumper\Caster\RedisCaster;
+
 
 class EventoDetalheController extends Controller
 {
@@ -16,7 +16,10 @@ class EventoDetalheController extends Controller
      */
     public function index()
     {
-        $detalhes = EventoDetalhe::with('evento')->get();
+        $detalhes = EventoDetalhe::with('evento')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
         return view('eventos_detalhes.index', compact('detalhes'));
     }
 
@@ -34,7 +37,6 @@ class EventoDetalheController extends Controller
      */
     public function store(StoreEventoDetalheRequest $request)
     {
-        
 
         EventoDetalhe::create($request->validated());
 
@@ -44,28 +46,26 @@ class EventoDetalheController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show(EventoDetalhe $detalhe)
     {
-        $detalhe = EventoDetalhe::with('evento')->findOrFail($id);
+        $detalhe->load('evento');
         return view('eventos_detalhes.show', compact('detalhe'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit(EventoDetalhe $detalhe)
     {
-        $detalhe = EventoDetalhe::findOrFail($id);
-        $eventos = Event::all(); // Lista de eventos para selecionar
+        $eventos = Event::all();
         return view('eventos_detalhes.edit', compact('detalhe', 'eventos'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateEventoDetalheRequest $request, $id)
+    public function update(UpdateEventoDetalheRequest $request, EventoDetalhe $detalhe)
     {
-        $detalhe = EventoDetalhe::findOrFail($id);
         $detalhe->update($request->validated());
 
         return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe atualizado com sucesso!');
@@ -74,9 +74,8 @@ class EventoDetalheController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(EventoDetalhe $detalhe)
     {
-        $detalhe = EventoDetalhe::findOrFail($id);
         $detalhe->delete();
 
         return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe deletado com sucesso!');

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PhpParser\Node\Expr\FuncCall;
@@ -12,6 +13,9 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+
+    public $incrementing = false; 
+    protected $keyType = 'string';
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +26,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'tipo_usuario',
+        'ativo' 
     ];
 
     /**
@@ -44,20 +50,21 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'ativo' => 'boolean',
         ];
     }
 
-    public function inscricoes()
+    public function inscricoes(): HasMany
     {
-        return $this->hasMany(Inscricao::class, 'user_id', 'id');
+        return $this->hasMany(Inscricao::class, 'user_id');
     }
 
-    public function eventosCoordenados()
+    public function eventosCoordenados(): HasMany
     {
-        return $this->hasMany(Event::class, 'coordenador_id', 'id');
+        return $this->hasMany(Event::class, 'coordenador_id');
     }
 
-    public function notificacoes()
+    public function notificacoes(): HasMany
     {
         return $this->hasMany(Notificacao::class);
     }

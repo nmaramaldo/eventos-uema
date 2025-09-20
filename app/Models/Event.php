@@ -26,6 +26,13 @@ class Event extends Model
         'status',
     ];
 
+    protected $casts = [
+        'data_inicio_evento' => 'datetime',
+        'data_fim_evento' => 'datetime',
+        'data_inicio_inscricao' => 'datetime',
+        'data_fim_inscricao' => 'datetime',
+    ];
+
     public function detalhes()
     {
         return $this->hasMany(EventoDetalhe::class, 'evento_id', 'id');
@@ -45,8 +52,8 @@ class Event extends Model
     {
         return $this->belongsToMany(
             Palestrante::class,
-            'evento_palestrante', 
-            'evento_id',          
+            'evento_palestrante',
+            'evento_id',
             'palestrante_id'
         );
     }

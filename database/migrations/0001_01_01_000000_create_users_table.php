@@ -8,19 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('usuarios', function (Blueprint $table) {
+        Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('nome');
+            $table->string('name'); 
             $table->string('email')->unique();
-            $table->text('senha_hash');
+            $table->timestamp('email_verified_at')->nullable(); 
+            $table->string('password'); 
             $table->string('tipo_usuario');
-            $table->boolean('status_usuarios')->default(true);
+            $table->boolean('ativo')->default(true); 
+            $table->rememberToken(); 
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('usuarios');
+        Schema::dropIfExists('users');
     }
 };

@@ -18,6 +18,7 @@ class EventoDetalhe extends Model
         'hora_fim',
         'modalidade',
         'capacidade',
+        'localidade'
     ];
 
     protected $casts = [

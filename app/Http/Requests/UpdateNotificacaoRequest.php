@@ -25,7 +25,7 @@ class UpdateNotificacaoRequest extends FormRequest
             'user_id' => 'required|uuid|exists:users,id',
             'titulo' => 'required|string|max:255',
             'mensagem' => 'required|string',
-            'lido' => 'boolean',
+            'lido' => false,
         ];
     }
 }

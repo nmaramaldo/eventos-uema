@@ -15,7 +15,9 @@ class CertificadoController extends Controller
      */
     public function index()
     {
-        $certificados = Certificado::with('inscricao')->get();
+        $certificados = Certificado::with(['inscricao.evento', 'inscricao.user'])
+            ->orderBy('data_emissao', 'desc')
+            ->paginate(15);
 
         return view('certificados.index', compact('certificados'));
     }
@@ -25,8 +27,13 @@ class CertificadoController extends Controller
      */
     public function create()
     {
-        $inscricoes = Inscricao::all();
-        
+        $inscricoes = Inscricao::whereHas('evento', function ($query) {
+            $query->where('status', 'finalizado');
+        })
+            ->with('user', 'evento')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('certificados.create', compact('inscricoes'));
     }
 
@@ -35,6 +42,11 @@ class CertificadoController extends Controller
      */
     public function store(StoreCertificadoRequest $request)
     {
+        $data = $request->validated();
+        if (empty($data['data_emissao'])) {
+            $data['data_emissao'] = now();
+        }
+
         $certificado = Certificado::create($request->validated());
 
         return redirect()->route('certificados.index')->with('success', 'Certificado criado com sucesso!');
@@ -45,7 +57,7 @@ class CertificadoController extends Controller
      */
     public function show(Certificado $certificado)
     {
-        $certificado->load('inscricao');
+        $certificado->load('inscricao.user', 'inscricao.evento');
 
         return view('certificados.show', compact('certificado'));
     }
@@ -55,9 +67,11 @@ class CertificadoController extends Controller
      */
     public function edit(Certificado $certificado)
     {
-        $inscricoes = Inscricao::all();
+        $inscricoes = Inscricao::with('user', 'evento')
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        return view('certificados.edit', compact('certificado','inscricoes'));
+        return view('certificados.edit', compact('certificado', 'inscricoes'));
     }
 
     /**

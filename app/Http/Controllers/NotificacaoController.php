@@ -15,7 +15,7 @@ class NotificacaoController extends Controller
      */
     public function index()
     {
-        $notificacoes = Notificacao::with('user')->latest()->get();
+        $notificacoes = Notificacao::with('user')->latest()->paginate(15);
 
         return view('notificacoes.index', compact('notificacoes'));
     }
@@ -48,6 +48,9 @@ class NotificacaoController extends Controller
      */
     public function show(Notificacao $notificacao)
     {
+        if (!$notificacao->lido && $notificacao->user_id == auth()->guard('web')->id()) {
+            $notificacao->update(['lido' => true]);
+        }
         return view('notificacoes.show', compact('notificacao'));
     }
 
@@ -83,7 +86,10 @@ class NotificacaoController extends Controller
 
     public function marcarComoLida(Notificacao $notificacao)
     {
-        $notificacao->update(['lido' => true ]);
+        if ($notificacao->user_id !== auth()->guard('web')->id()) {
+            abort(403, 'Não autorizado');
+        }
+        $notificacao->update(['lido' => true]);
 
         return redirect()->back()->with('success', 'Notificação marcada como lida!');
     }

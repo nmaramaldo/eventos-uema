@@ -22,12 +22,14 @@ class UpdateEventoDetalheRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'evento_id' => 'sometimes|exists:eventos,id',
             'descricao' => 'sometimes|string',
             'data' => 'sometimes|date',
             'hora_inicio' => 'sometimes',
             'hora_fim' => 'sometimes|after:hora_inicio',
             'modalidade' => 'sometimes|string|max:100',
             'capacidade' => 'sometimes|nullable|integer',
+            'localidade' => 'required|string|max:255'
         ];
     }
 }

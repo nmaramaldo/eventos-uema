@@ -10,7 +10,9 @@ class Inscricao extends Model
     use HasFactory;
 
     protected $table = 'inscricoes';
-
+    public $incrementing = false;
+    protected $keyType = 'string';
+    
     protected $fillable = [
         'user_id',
         'evento_id',
@@ -21,7 +23,7 @@ class Inscricao extends Model
 
     protected $casts = [
         'data_inscricao' => 'datetime',
-        'presente' => 'boolean',
+        'presente' => 'boolean'
     ];
 
     public function user()

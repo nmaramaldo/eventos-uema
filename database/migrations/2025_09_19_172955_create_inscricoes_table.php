@@ -10,11 +10,14 @@ return new class extends Migration
     {
         Schema::create('inscricoes', function (Blueprint $table) {
             $table->uuid('id')->primary(); 
-            $table->foreignUuid('usuario_id')->constrained('usuarios');
+            $table->foreignUuid('user_id')->constrained('users');
             $table->foreignUuid('evento_id')->constrained('eventos');
             $table->string('status');
             $table->timestamp('data_inscricao')->useCurrent();
+            $table->boolean('presente')->default(false);
             $table->timestamps();
+
+            $table->unique(['user_id', 'evento_id']);
         });
     }
 

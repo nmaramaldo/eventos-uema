@@ -22,7 +22,6 @@ class StoreInscricaoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|uuid|exists:users,id',
             'evento_id' => 'required|uuid|exists:eventos,id',
             'status' => 'required|string|in:pendente,aprovado,cancelado',
             'data_inscricao' => 'sometimes|date',

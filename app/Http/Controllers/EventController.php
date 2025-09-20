@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -14,7 +15,9 @@ class EventController extends Controller
      */
     public function index()
     {
-        $eventos = Event::with(['detalhes', 'coordenador'])->get();
+        $eventos = Event::with(['detalhes', 'coordenador'])
+            ->orderBy('data', 'desc')
+            ->paginate(10);
 
         return view('eventos.index', compact('eventos'));
     }
@@ -24,7 +27,7 @@ class EventController extends Controller
      */
     public function create()
     {
-        $coordenadores = \App\Models\User::all();
+        $coordenadores = User::where('tipo', 'coordenador')->get();
         return view('eventos.create', compact('coordenadores'));
     }
 
@@ -42,28 +45,28 @@ class EventController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show(Event $evento)
     {
-        $evento = Event::with(['detalhes', 'coordenador'])->findOrFail($id);
+        $evento->load(['detalhes', 'coordenador', 'palestrantes', 'inscricoes']);
+
         return view('eventos.show', compact('evento'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit(Event $evento)
     {
-        $evento = Event::findOrFail($id);
-        $coordenadores = \App\Models\User::all();
+
+        $coordenadores = User::where('tipo', 'coordenador')->get();
         return view('eventos.edit', compact('evento', 'coordenadores'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateEventRequest $request, $id)
+    public function update(UpdateEventRequest $request, Event $evento)
     {
-        $evento = Event::findOrFail($id);
         $evento->update($request->validated());
 
         return redirect()->route('eventos.index')->with('success', 'Evento atualizado com sucesso!');
@@ -72,9 +75,8 @@ class EventController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(Event $evento)
     {
-        $evento = Event::findOrFail($id);
         $evento->delete();
 
         return redirect()->route('eventos.index')->with('success', 'Evento deletado com sucesso!');

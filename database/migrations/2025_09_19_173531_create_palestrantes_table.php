@@ -1,4 +1,5 @@
 <?php
+// ... create_palestrantes_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -9,11 +10,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('palestrantes', function (Blueprint $table) {
-            $table->uuid('id')->primary(); 
-            $table->foreignUuid('evento_id')->constrained('eventos')->onDelete('cascade');
+            $table->uuid('id')->primary();
             $table->string('nome');
-            $table->text('biografia');
-            $table->string('foto_url')->nullable();
+            $table->text('biografia')->nullable();
+            $table->text('foto_url')->nullable();
             $table->timestamps();
         });
     }

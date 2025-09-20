@@ -29,6 +29,7 @@ class StoreEventoDetalheRequest extends FormRequest
             'hora_fim' => 'required|after:hora_inicio',
             'modalidade' => 'required|string|max:100',
             'capacidade' => 'nullable|integer',
+            'localidade' => 'required|string|max:255'
         ];
     }
 }

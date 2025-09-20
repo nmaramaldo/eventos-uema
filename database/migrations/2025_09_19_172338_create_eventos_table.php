@@ -10,17 +10,16 @@ return new class extends Migration
     {
         Schema::create('eventos', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->foreignUuid('coordenador_id')->constrained('users');
             $table->string('nome');
             $table->text('descricao');
             $table->date('data_inicio_evento');
             $table->date('data_fim_evento');
             $table->date('data_inicio_inscricao');
             $table->date('data_fim_inscricao');
-            $table->string('coordenador'); 
             $table->string('tipo_evento');
             $table->string('logomarca_url')->nullable();
             $table->string('status');
-            $table->boolean('presente')->default(false);
             $table->timestamps();
         });
     }

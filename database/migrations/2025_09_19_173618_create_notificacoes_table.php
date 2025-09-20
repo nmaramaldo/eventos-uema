@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('notificacoes', function (Blueprint $table) {
             $table->uuid('id')->primary(); 
-            $table->foreignUuid('usuario_id')->constrained('usuarios');
+            $table->foreignUuid('user_id')->constrained('users');
             $table->string('titulo');
             $table->text('mensagem');
             $table->timestamp('enviado_em');

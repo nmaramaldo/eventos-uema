@@ -16,7 +16,9 @@ class PalestranteController extends Controller
      */
     public function index()
     {
-        $palestrantes = Palestrante::with(['eventos'])->get();
+        $palestrantes = Palestrante::with(['eventos'])
+        ->orderBy('nome')
+        ->paginate(10);
 
         return view('palestrantes.index', compact('palestrantes'));
     }
@@ -26,7 +28,7 @@ class PalestranteController extends Controller
      */
     public function create()
     {
-        $eventos = Event::all();
+        $eventos = Event::orderBy('nome')->get();
 
         return view('palestrantes.create', compact('eventos'));
     }
@@ -42,7 +44,7 @@ class PalestranteController extends Controller
             $palestrante->eventos()->sync($request->eventos);
         }
 
-        return redirect()->route('palestrantes.index')->with('success', 'Palestrante criado com sucesso!');
+        return redirect()->route('palestrantes.index')->with('success', 'Palestrante cadastrado com sucesso!');
     }
 
     /**
@@ -51,7 +53,7 @@ class PalestranteController extends Controller
     public function show(Palestrante $palestrante)
     {
         $palestrante->load(['eventos' => function ($query) {
-            $query->with('coordenador');
+            $query->with('coordenador')->orderBy('data', 'desc');
         }]);
 
         return view('palestrantes.show', compact('palestrante'));
@@ -62,7 +64,7 @@ class PalestranteController extends Controller
      */
     public function edit(Palestrante $palestrante)
     {
-        $eventos = Event::all();
+        $eventos = Event::orderBy('nome')->get();
         $palestrante->load('eventos');
 
         return view('palestrantes.edit', compact('palestrante', 'eventos'));
