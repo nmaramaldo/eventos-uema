@@ -1,0 +1,32 @@
+:root {
+  /* ajuste estes hex para bater com o login */
+  --brand: #1e40af;         /* azul principal */
+  --brand-dark: #12308a;    /* azul mais escuro */
+}
+
+.navbar.navbar-default {
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand-dark) 100%);
+  border: none;
+}
+.navbar-default .navbar-brand, 
+.navbar-default .navbar-nav > li > a {
+  color: #fff !important;
+}
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-brand:hover {
+  opacity: .9;
+}
+
+.btn-primary, .btn-login {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.btn-primary:hover, .btn-login:hover {
+  background: var(--brand-dark);
+  border-color: var(--brand-dark);
+}
+
+/* hero (faixa escura inicial) – se quiser aproximar do login */
+#intro {
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand-dark) 100%) !important;
+}
