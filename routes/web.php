@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 
+// Front (público)
+use App\Http\Controllers\FrontController;
+
+// Protegidos / app
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventoDetalheController;
@@ -19,15 +23,16 @@ use App\Http\Controllers\Admin\UserAdminController;
 |--------------------------------------------------------------------------
 */
 
-// Home pública (usa seu template)
-Route::get('/', fn () => view('front.home'))->name('front.home');
+// Home pública
+Route::get('/', [FrontController::class, 'home'])->name('front.home');
 
-// Rotas públicas de eventos (placeholder; por enquanto apontam para a home)
+// Listagem e detalhe públicos de eventos
 Route::prefix('eventos')->name('front.eventos.')->group(function () {
-    Route::get('/', fn () => view('front.home'))->name('index');      // front.eventos.index
-    Route::get('/{id}', fn ($id) => view('front.home'))->name('show'); // front.eventos.show
+    // OBS: o método correto na FrontController é "index"
+    Route::get('/', [FrontController::class, 'index'])->name('index');
+    // {evento} usa implicit binding (UUID)
+    Route::get('/{evento}', [FrontController::class, 'show'])->name('show');
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -41,10 +46,9 @@ Route::get('/dashboard', fn () => view('dashboard'))
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile',  [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile',[ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',[ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -62,10 +66,15 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::resource('eventos', EventController::class);
     Route::resource('eventos_detalhes', EventoDetalheController::class);
 
+    // Programação POR EVENTO (atalhos amigáveis)
+    Route::get('eventos/{evento}/programacao',        [EventoDetalheController::class, 'indexByEvent'])->name('eventos.programacao.index');
+    Route::get('eventos/{evento}/programacao/create', [EventoDetalheController::class, 'createForEvent'])->name('eventos.programacao.create');
+    Route::post('eventos/{evento}/programacao',       [EventoDetalheController::class, 'storeForEvent'])->name('eventos.programacao.store');
+
     // Inscrições, certificados e palestrantes
-    Route::resource('inscricoes',    InscricaoController::class);
-    Route::resource('certificados',  CertificadoController::class);
-    Route::resource('palestrantes',  PalestranteController::class);
+    Route::resource('inscricoes',   InscricaoController::class);
+    Route::resource('certificados', CertificadoController::class);
+    Route::resource('palestrantes', PalestranteController::class);
 
     // Notificações
     Route::resource('notificacoes', NotificacaoController::class);
@@ -74,7 +83,6 @@ Route::middleware('auth')->prefix('app')->group(function () {
         [NotificacaoController::class, 'marcarComoLida']
     )->name('notificacoes.marcarComoLida');
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -93,7 +101,6 @@ Route::middleware(['auth', 'can:manage-users'])
         Route::patch('usuarios/{user}/desativar', [UserAdminController::class, 'desativar'])->name('usuarios.desativar');
         Route::patch('usuarios/{user}/tipo',      [UserAdminController::class, 'alterarTipo'])->name('usuarios.tipo');
     });
-
 
 /*
 |--------------------------------------------------------------------------

@@ -17,12 +17,17 @@ class Event extends Model
 
     // UUID como chave primária
     public $incrementing = false;
-    protected $keyType = 'string';
+    protected $keyType   = 'string';
 
     protected $fillable = [
         'coordenador_id',
         'nome',
         'descricao',
+
+        // NOVOS CAMPOS
+        'tipo_classificacao',
+        'area_tematica',
+
         'data_inicio_evento',
         'data_fim_evento',
         'data_inicio_inscricao',
@@ -30,7 +35,9 @@ class Event extends Model
         'tipo_evento',
         'logomarca_url',
         'status',
-        // adicione aqui qualquer outra coluna que exista na tabela
+
+        // campo opcional para controle de vagas
+        'vagas',
     ];
 
     protected $casts = [
@@ -38,11 +45,9 @@ class Event extends Model
         'data_fim_evento'        => 'datetime',
         'data_inicio_inscricao'  => 'datetime',
         'data_fim_inscricao'     => 'datetime',
+        'vagas'                  => 'integer',
     ];
 
-    /**
-     * Define o UUID automaticamente ao criar.
-     */
     protected static function booted(): void
     {
         static::creating(function (self $model) {
@@ -52,10 +57,14 @@ class Event extends Model
         });
     }
 
-    // ---------------------------
+    // ------------------------------------------------------------------
     // Relacionamentos
-    // ---------------------------
+    // ------------------------------------------------------------------
 
+    /**
+     * Não usamos orderBy aqui para evitar erro em colunas que não existem.
+     * A ordenação é aplicada nos controllers com ->ordenado().
+     */
     public function detalhes(): HasMany
     {
         return $this->hasMany(EventoDetalhe::class, 'evento_id', 'id');
@@ -78,23 +87,16 @@ class Event extends Model
             ->withTimestamps();
     }
 
-    // ---------------------------
+    // ------------------------------------------------------------------
     // Helpers / Regras de negócio
-    // ---------------------------
+    // ------------------------------------------------------------------
 
-    /**
-     * Considera o evento "ativo/publicado".
-     * Ajuste os valores de status conforme a sua regra (ex.: 'ativo', 'publicado', 'rascunho' etc.).
-     */
     public function isAtivo(): bool
     {
         $status = is_string($this->status) ? strtolower($this->status) : $this->status;
         return in_array($status, ['ativo', 'publicado', 1, true], true);
     }
 
-    /**
-     * Retorna se as inscrições estão abertas agora.
-     */
     public function inscricoesAbertas(): bool
     {
         $now = now();
@@ -105,9 +107,6 @@ class Event extends Model
             && $this->data_fim_inscricao >= $now;
     }
 
-    /**
-     * Retorna se o evento está em andamento agora.
-     */
     public function eventoEmAndamento(): bool
     {
         $now = now();
@@ -117,23 +116,16 @@ class Event extends Model
             && $this->data_fim_evento >= $now;
     }
 
-    /**
-     * Vagas disponíveis (se a coluna 'vagas' existir).
-     * Se não existir no schema, retorna null.
-     */
     public function vagasDisponiveis(): ?int
     {
         if (!array_key_exists('vagas', $this->attributes)) {
-            return null; // sua tabela não tem 'vagas'
+            return null;
         }
-        $total = (int) $this->getAttribute('vagas');
+        $total  = (int) $this->getAttribute('vagas');
         $usadas = (int) $this->inscricoes()->count();
         return max(0, $total - $usadas);
     }
 
-    /**
-     * Accessor: período do evento formatado (propriedade $evento->periodo_evento).
-     */
     public function getPeriodoEventoAttribute(): string
     {
         $ini = optional($this->data_inicio_evento)->format('d/m/Y H:i');
@@ -141,9 +133,6 @@ class Event extends Model
         return trim("{$ini} — {$fim}");
     }
 
-    /**
-     * Accessor: período de inscrições formatado (propriedade $evento->periodo_inscricao).
-     */
     public function getPeriodoInscricaoAttribute(): string
     {
         $ini = optional($this->data_inicio_inscricao)->format('d/m/Y H:i');
@@ -151,27 +140,20 @@ class Event extends Model
         return trim("{$ini} — {$fim}");
     }
 
-    /**
-     * Wrappers para compatibilidade com views que chamou como método:
-     * $evento->periodo_evento() / $evento->periodo_inscricao()
-     */
+    // Compat com views antigas
     public function periodo_evento(): string
     {
         return $this->getPeriodoEventoAttribute();
     }
-
     public function periodo_inscricao(): string
     {
         return $this->getPeriodoInscricaoAttribute();
     }
 
-    // ---------------------------
+    // ------------------------------------------------------------------
     // Scopes
-    // ---------------------------
+    // ------------------------------------------------------------------
 
-    /**
-     * Próximos eventos (ordena pelo início).
-     */
     public function scopeProximos($query)
     {
         return $query
