@@ -41,25 +41,6 @@ class StoreEventRequest extends FormRequest
             // OPCIONAL – vagas
             'vagas'                 => ['sometimes', 'nullable', 'integer', 'min:1'],
 
-            // Passo 4 – Programação
-            'locais'                        => ['sometimes', 'array'],
-            'locais.*.nome'                 => ['required_with:locais', 'string', 'max:255'],
-
-            'palestrantes'                  => ['sometimes', 'array'],
-            'palestrantes.*.nome'           => ['required_with:palestrantes', 'string', 'max:255'],
-            'palestrantes.*.email'          => ['nullable', 'email'],
-            'palestrantes.*.cargo'          => ['nullable', 'string', 'max:255'],
-            'palestrantes.*.mini_bio'       => ['nullable', 'string'],
-            'palestrantes.*.foto_url'       => ['nullable', 'url'],
-
-            'atividades'                    => ['sometimes', 'array'],
-            'atividades.*.titulo'           => ['required_with:atividades', 'string', 'max:255'],
-            'atividades.*.tipo'             => ['nullable', 'string', 'max:100'],
-            'atividades.*.inicio'           => ['nullable', 'date'],
-            'atividades.*.fim'              => ['nullable', 'date'], // sem after_or_equal (evita falso negativo)
-            'atividades.*.local_key'        => ['nullable', 'string', 'max:255'],
-            'atividades.*.capacidade'       => ['nullable', 'integer', 'min:1'],
-            'atividades.*.requer_inscricao' => ['nullable', 'boolean'],
         ];
     }
 
@@ -80,14 +61,6 @@ class StoreEventRequest extends FormRequest
             'capa'                  => 'imagem de capa',
             'status'                => 'status',
             'vagas'                 => 'vagas do evento',
-
-            'locais.*.nome'                 => 'nome do local',
-            'palestrantes.*.nome'           => 'nome do palestrante',
-            'palestrantes.*.email'          => 'e-mail do palestrante',
-            'atividades.*.titulo'           => 'título da atividade',
-            'atividades.*.inicio'           => 'início da atividade',
-            'atividades.*.fim'              => 'fim da atividade',
-            'atividades.*.capacidade'       => 'capacidade da atividade',
         ];
     }
 

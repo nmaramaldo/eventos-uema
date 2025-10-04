@@ -44,14 +44,14 @@ return new class extends Migration {
             FROM eventos
         ');
 
-        // 3) Troca as tabelas
-        Schema::drop('eventos');
+        // 3) Troca as tabelas USANDO CASCADE
+        DB::statement('DROP TABLE eventos CASCADE');
         Schema::rename('eventos_new', 'eventos');
     }
 
     public function down(): void
     {
-        // Reverte para NOT NULL (se precisar). Mesma ideia ao contrário:
+        // Reverte para NOT NULL
         Schema::create('eventos_old', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->string('coordenador_id')->nullable();
@@ -86,7 +86,8 @@ return new class extends Migration {
             FROM eventos
         ');
 
-        Schema::drop('eventos');
+        // Usa CASCADE no drop também
+        DB::statement('DROP TABLE eventos CASCADE');
         Schema::rename('eventos_old', 'eventos');
     }
 };

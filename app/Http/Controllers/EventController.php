@@ -29,7 +29,7 @@ class EventController extends Controller
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $w->where('nome', 'like', "%{$q}%")
-                  ->orWhere('descricao', 'like', "%{$q}%");
+                    ->orWhere('descricao', 'like', "%{$q}%");
             });
         }
 
@@ -46,7 +46,7 @@ class EventController extends Controller
     {
         $this->authorize('manage-users');
         $coordenadores = User::orderBy('name')->get();
-        return view('eventos.wizard', compact('coordenadores'));
+        return view('eventos.create', compact('coordenadores'));
     }
 
     public function store(StoreEventRequest $request)
@@ -77,7 +77,7 @@ class EventController extends Controller
         });
 
         return redirect()
-            ->route('eventos.show', $evento)
+            ->route('eventos.programacao.create', $evento)
             ->with('success', 'Evento criado com sucesso!');
     }
 
@@ -93,7 +93,7 @@ class EventController extends Controller
         ]);
 
         $relacionados = Event::where('id', '!=', $evento->id)
-            ->when($evento->area_tematica, fn ($q) => $q->where('area_tematica', $evento->area_tematica))
+            ->when($evento->area_tematica, fn($q) => $q->where('area_tematica', $evento->area_tematica))
             ->whereIn('status', ['ativo', 'publicado'])
             ->orderBy('data_inicio_evento', 'asc')
             ->take(6)
