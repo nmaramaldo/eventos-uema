@@ -14,7 +14,6 @@ class Inscricao extends Model
 
     protected $table = 'inscricoes';
 
-    // PK como UUID
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -31,9 +30,6 @@ class Inscricao extends Model
         'presente'       => 'boolean',
     ];
 
-    /**
-     * Define automaticamente o UUID e a data de inscrição (se não informada).
-     */
     protected static function booted(): void
     {
         static::creating(function (self $m) {
@@ -46,13 +42,15 @@ class Inscricao extends Model
         });
     }
 
-    // -------------------
-    // Relacionamentos
-    // -------------------
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Alias para compatibilidade com o controller/view
+    public function usuario(): BelongsTo
+    {
+        return $this->user();
     }
 
     public function evento(): BelongsTo
@@ -64,10 +62,6 @@ class Inscricao extends Model
     {
         return $this->hasOne(Certificado::class);
     }
-
-    // -------------------
-    // Scopes auxiliares
-    // -------------------
 
     public function scopeDoUsuario($query, string $userId)
     {

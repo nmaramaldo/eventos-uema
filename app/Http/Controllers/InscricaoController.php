@@ -12,40 +12,44 @@ use Illuminate\Http\Request;
 class InscricaoController extends Controller
 {
     /**
-     * Lista "Minhas inscrições".
+     * Minhas inscrições (usuário logado).
      */
     public function index()
     {
-        $inscricoes = Inscricao::with(['evento'])
-            ->where('user_id', auth()->guard('web')->id())
+        $userId = auth()->id();
+
+        $inscricoes = Inscricao::with('evento')
+            ->where('user_id', $userId)
             ->orderByDesc('created_at')
-            ->paginate(20); // para usar {{ $inscricoes->links() }}
+            ->paginate(20);
 
         return view('inscricoes.index', compact('inscricoes'));
     }
 
     /**
-     * Form opcional de criação (se for permitir escolher evento por aqui).
+     * (Opcional) Form de criação.
      */
     public function create()
     {
         $eventos = Event::where('data_inicio_evento', '>=', now())
-            ->orderBy('data_inicio_evento', 'asc')
+            ->orderBy('data_inicio_evento')
             ->get();
 
         return view('inscricoes.create', compact('eventos'));
     }
 
     /**
-     * Realiza a inscrição do usuário logado.
+     * Inscrever (idempotente).
      */
     public function store(StoreInscricaoRequest $request)
     {
-        // Compatibilidade: aceita 'evento_id' (atual) ou 'event_id' (legado)
-        $validated = $request->validated();
-        $userId    = auth()->guard('web')->id();
-        $eventoId  = $validated['evento_id'] ?? $request->input('evento_id') ?? $request->input('event_id');
+        $userId = auth()->id();
+        if (!$userId) {
+            return back()->withErrors(['error' => 'Você precisa estar logado para se inscrever.']);
+        }
 
+        // Aceita evento_id (ou event_id legado)
+        $eventoId = $request->input('evento_id') ?? $request->input('event_id');
         if (!$eventoId) {
             return back()->withErrors(['error' => 'Evento não informado.']);
         }
@@ -55,36 +59,34 @@ class InscricaoController extends Controller
             return back()->withErrors(['error' => 'Evento inválido.']);
         }
 
-        // Janela de inscrição precisa estar aberta
+        // Janela de inscrições deve estar aberta
         if (!$evento->inscricoesAbertas()) {
             return back()->withErrors(['error' => 'Inscrições indisponíveis para este evento.']);
         }
 
-        // Evita duplicidade
-        $jaInscrito = Inscricao::where('user_id', $userId)
-            ->where('evento_id', $evento->id)
-            ->exists();
-        if ($jaInscrito) {
-            return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
-        }
-
-        // (Opcional) Checa vagas se sua tabela do evento tiver 'vagas' (o helper do Model lida quando não existe)
+        // (Opcional) Vagas — só se sua tabela tiver a coluna 'vagas'
         $vagas = $evento->vagasDisponiveis();
         if ($vagas !== null && $vagas <= 0) {
             return back()->withErrors(['error' => 'Não há vagas disponíveis.']);
         }
 
         try {
-            Inscricao::create([
-                'user_id'   => $userId,
-                'evento_id' => $evento->id,
-            ]);
+            // Evita duplicidade de forma atômica
+            $inscricao = Inscricao::firstOrCreate(
+                ['user_id' => $userId, 'evento_id' => $evento->id],
+                ['status'  => 'ativa'] // remova se sua coluna não existir
+            );
 
-            return redirect()
-                ->route('inscricoes.index')
-                ->with('success', 'Inscrição realizada com sucesso.');
+            if ($inscricao->wasRecentlyCreated) {
+                return redirect()
+                    ->route('inscricoes.index')
+                    ->with('success', 'Inscrição realizada com sucesso.');
+            }
+
+            // Já existia
+            return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
         } catch (QueryException $e) {
-            // 23000 (SQLite/MySQL) — violação de constraint (ex.: índice único)
+            // 23000 = violação de constraint (ex.: índice único)
             if ($e->getCode() === '23000') {
                 return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
             }
@@ -95,44 +97,43 @@ class InscricaoController extends Controller
     }
 
     /**
-     * Exibe a inscrição (do próprio usuário).
+     * Ver inscrição.
      */
     public function show(Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->guard('web')->id()) {
-            abort(403, 'Acesso não autorizado');
+        if ($inscricao->user_id !== auth()->id()) {
+            abort(403);
         }
 
-        $inscricao->load(['usuario', 'evento']); // assuming Inscricao has usuario() and evento()
+        $inscricao->load(['usuario', 'evento']); // ajuste se seus relacionamentos tiverem outros nomes
         return view('inscricoes.show', compact('inscricao'));
     }
 
     /**
-     * Form de edição (opcional).
+     * (Opcional) Editar.
      */
     public function edit(Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->guard('web')->id()) {
-            abort(403, 'Acesso não autorizado');
+        if ($inscricao->user_id !== auth()->id()) {
+            abort(403);
         }
 
         $eventos = Event::where('data_inicio_evento', '>=', now())
-            ->orderBy('data_inicio_evento', 'asc')
+            ->orderBy('data_inicio_evento')
             ->get();
 
         return view('inscricoes.edit', compact('inscricao', 'eventos'));
     }
 
     /**
-     * Atualiza a inscrição (opcional).
+     * (Opcional) Atualizar.
      */
     public function update(UpdateInscricaoRequest $request, Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->guard('web')->id()) {
-            abort(403, 'Acesso não autorizado');
+        if ($inscricao->user_id !== auth()->id()) {
+            abort(403);
         }
 
-        // Se sua UpdateInscricaoRequest permitir mudar o evento, considere checar duplicidade/janela aqui também.
         $inscricao->update($request->validated());
 
         return redirect()
@@ -141,12 +142,12 @@ class InscricaoController extends Controller
     }
 
     /**
-     * Cancela a inscrição (do próprio usuário).
+     * Cancelar inscrição.
      */
     public function destroy(Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->guard('web')->id()) {
-            abort(403, 'Acesso não autorizado');
+        if ($inscricao->user_id !== auth()->id()) {
+            abort(403);
         }
 
         $inscricao->delete();
