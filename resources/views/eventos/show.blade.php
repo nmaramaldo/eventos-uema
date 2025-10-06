@@ -3,6 +3,7 @@
 
 @section('content')
 @php
+  // Badge do status
   $status = strtolower((string)($evento->status ?? ''));
   $statusClass = match ($status) {
     'ativo'      => 'label-success',
@@ -10,20 +11,42 @@
     'rascunho'   => 'label-default',
     default      => 'label-default',
   };
+
+  // Rótulo amigável para o tipo (slug -> texto)
+  $tipoEventoMap = [
+    'presencial' => 'Presencial',
+    'online'     => 'Online',
+    'hibrido'    => 'Híbrido',
+    'videoconf'  => 'Videoconferência',
+  ];
+  $tipoEventoLabel = $tipoEventoMap[$evento->tipo_evento] ?? ($evento->tipo_evento ?: '—');
+
+  // Novos campos
+  $classificacao = $evento->tipo_classificacao ?: null;
+  $areaTematica  = $evento->area_tematica ?: null;
+
+  // Vagas (se sua tabela tiver a coluna 'vagas')
+  $vagasDisp = method_exists($evento, 'vagasDisponiveis') ? $evento->vagasDisponiveis() : null;
 @endphp
 
 <div class="container" style="padding:60px 0; max-width:1000px">
   <div class="row">
     <div class="col-sm-9">
       <h2 style="margin-bottom:5px">{{ $evento->nome }}</h2>
+
       <p class="text-muted" style="margin-bottom:10px">
         <span class="label {{ $statusClass }}" title="Status do evento">
           {{ $evento->status ? ucfirst($evento->status) : '—' }}
         </span>
+
         @if($evento->inscricoesAbertas())
           <span class="label label-success" style="margin-left:6px">Inscrições abertas</span>
         @else
           <span class="label label-default" style="margin-left:6px">Inscrições fechadas</span>
+        @endif
+
+        @if(!is_null($vagasDisp))
+          <span class="label label-info" style="margin-left:6px">Vagas: {{ $vagasDisp }}</span>
         @endif
       </p>
 
@@ -34,13 +57,30 @@
             <strong>Período do evento:</strong><br>
             {{ $evento->periodo_evento }}
           </p>
+
           <p style="margin-bottom:8px">
             <strong>Período de inscrições:</strong><br>
             {{ $evento->periodo_inscricao }}
           </p>
-          <p style="margin-bottom:0">
-            <strong>Tipo:</strong> {{ $evento->tipo_evento ?? '-' }}
+
+          <p style="margin-bottom:8px">
+            <strong>Tipo de realização:</strong>
+            {{ $tipoEventoLabel }}
           </p>
+
+          @if($classificacao)
+            <p style="margin-bottom:8px">
+              <strong>Classificação do evento:</strong>
+              {{ $classificacao }}
+            </p>
+          @endif
+
+          @if($areaTematica)
+            <p style="margin-bottom:0">
+              <strong>Área temática:</strong>
+              {{ $areaTematica }}
+            </p>
+          @endif
         </div>
       </div>
 
@@ -51,8 +91,8 @@
         </div>
       @endif
 
-      {{-- Programação / Detalhes (placeholder; liste $evento->detalhes se desejar) --}}
-      {{-- 
+      {{-- Programação / Detalhes (se quiser listar $evento->detalhes) --}}
+      {{--
       <div class="panel panel-default">
         <div class="panel-heading"><strong>Programação</strong></div>
         <div class="panel-body">
@@ -90,7 +130,6 @@
         <div class="panel-body">
           @auth
             @php
-              // Como o controller carrega $evento->inscricoes, dá pra verificar localmente
               $jaInscrito = $evento->inscricoes->contains('user_id', auth()->id());
             @endphp
 

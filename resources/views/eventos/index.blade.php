@@ -23,8 +23,11 @@
           <th>Período</th>
           <th>Inscrições</th>
           <th>Tipo</th>
+          @can('manage-users')
+            <th>Capacidade</th>
+          @endcan
           <th>Status</th>
-          <th style="width:200px">Ações</th>
+          <th style="width:220px">Ações</th>
         </tr>
       </thead>
       <tbody>
@@ -37,6 +40,7 @@
               'rascunho'   => 'label-default',
               default      => 'label-default',
             };
+            $inscritos = $e->inscricoes()->count();
           @endphp
 
           <tr>
@@ -49,6 +53,17 @@
             <td>{{ $e->periodo_evento }}</td>
             <td>{{ $e->periodo_inscricao }}</td>
             <td>{{ $e->tipo_evento ?? '—' }}</td>
+
+            @can('manage-users')
+              <td>
+                @if(!is_null($e->vagas))
+                  {{ $inscritos }} / {{ $e->vagas }}
+                @else
+                  —
+                @endif
+              </td>
+            @endcan
+
             <td><span class="label {{ $statusClass }}">{{ $e->status ? ucfirst($e->status) : '—' }}</span></td>
             <td>
               <a class="btn btn-xs btn-default" href="{{ route('eventos.show', $e) }}">Ver</a>
@@ -65,7 +80,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="6" class="text-muted">Nenhum evento cadastrado.</td>
+            <td colspan="7" class="text-muted">Nenhum evento cadastrado.</td>
           </tr>
         @endforelse
       </tbody>

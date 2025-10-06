@@ -5,161 +5,273 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
+use App\Models\EventoDetalhe;
+use App\Models\Local;
+use App\Models\Palestrante;
 use App\Models\User;
-use Illuminate\Support\Facades\Gate;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
-    /**
-     * Listagem de eventos.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $eventos = Event::with(['detalhes', 'coordenador'])
-            ->orderByDesc('data_inicio_evento')
-            ->paginate(10);
+        $this->authorize('manage-users');
+
+        $q      = trim((string) $request->query('q', ''));
+        $status = $request->query('status');
+
+        $query = Event::query();
+
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->where('nome', 'like', "%{$q}%")
+                    ->orWhere('descricao', 'like', "%{$q}%");
+            });
+        }
+
+        if ($status !== null && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        $eventos = $query->latest('created_at')->paginate(15)->withQueryString();
 
         return view('eventos.index', compact('eventos'));
     }
 
-    /**
-     * Form de criação (wizard).
-     */
     public function create()
     {
-        abort_unless(Gate::allows('manage-users'), 403);
-
-        $coordenadores = User::whereIn('tipo_usuario', ['admin', 'master'])
-            ->orderBy('name')
-            ->get();
-
-        if (auth()->check() && $coordenadores->doesntContain('id', auth()->id())) {
-            $coordenadores->push(auth()->user());
-        }
-
-        return view('eventos.wizard', compact('coordenadores'));
+        $this->authorize('manage-users');
+        $coordenadores = User::orderBy('name')->get();
+        return view('eventos.create', compact('coordenadores'));
     }
 
-    /**
-     * Salvar novo evento.
-     */
     public function store(StoreEventRequest $request)
     {
-        abort_unless(Gate::allows('manage-users'), 403);
+        $this->authorize('manage-users');
 
         $data = $request->validated();
 
-        // Normaliza tipo_evento se vier com rótulos legados.
+        // upload de capa (opcional) -> salva em logomarca_url (URL pública)
+        if ($request->hasFile('capa')) {
+            $path = $request->file('capa')->store('capas', 'public');
+            $data['logomarca_url'] = Storage::url($path);
+        }
+
         if (!empty($data['tipo_evento'])) {
             $data['tipo_evento'] = $this->normalizeTipoEvento($data['tipo_evento']);
         }
 
-        // Status padrão se não vier do form.
         $data['status'] = $data['status'] ?? 'rascunho';
-
-        // Coordenador padrão: usuário atual.
         if (empty($data['coordenador_id']) && auth()->check()) {
             $data['coordenador_id'] = auth()->id();
         }
 
-        $evento = Event::create($data);
+        $evento = DB::transaction(function () use ($data, $request) {
+            $evento = Event::create($data);
+            $this->persistProgramacaoDoRequest($request, $evento);
+            return $evento;
+        });
 
         return redirect()
-            ->route('eventos.show', $evento)
+            ->route('eventos.programacao.create', $evento)
             ->with('success', 'Evento criado com sucesso!');
     }
 
-    /**
-     * Detalhe do evento.
-     */
     public function show(Event $evento)
     {
-        $evento->load(['detalhes', 'coordenador', 'palestrantes', 'inscricoes']);
+        $this->authorize('manage-users');
 
-        return view('eventos.show', compact('evento'));
-    }
+        $evento->load([
+            'coordenador',
+            'inscricoes',
+            'palestrantes',
+            'detalhes' => fn($q) => $q->ordenado(),
+        ]);
 
-    /**
-     * Form de edição (wizard).
-     */
-    public function edit(Event $evento)
-    {
-        abort_unless(Gate::allows('manage-users'), 403);
-
-        $coordenadores = User::whereIn('tipo_usuario', ['admin', 'master'])
-            ->orderBy('name')
+        $relacionados = Event::where('id', '!=', $evento->id)
+            ->when($evento->area_tematica, fn($q) => $q->where('area_tematica', $evento->area_tematica))
+            ->whereIn('status', ['ativo', 'publicado'])
+            ->orderBy('data_inicio_evento', 'asc')
+            ->take(6)
             ->get();
 
-        if (auth()->check() && $coordenadores->doesntContain('id', auth()->id())) {
-            $coordenadores->push(auth()->user());
-        }
+        return view('front.event-show', compact('evento', 'relacionados'));
+    }
 
+    public function edit(Event $evento)
+    {
+        $this->authorize('manage-users');
+        $coordenadores = User::orderBy('name')->get();
         return view('eventos.wizard', compact('evento', 'coordenadores'));
     }
 
-    /**
-     * Atualizar evento.
-     */
     public function update(UpdateEventRequest $request, Event $evento)
     {
-        abort_unless(Gate::allows('manage-users'), 403);
+        $this->authorize('manage-users');
 
         $data = $request->validated();
 
-        // Normaliza tipo_evento, se vier.
+        // upload de capa (opcional)
+        if ($request->hasFile('capa')) {
+            $path = $request->file('capa')->store('capas', 'public');
+            $data['logomarca_url'] = Storage::url($path);
+        }
+
         if (array_key_exists('tipo_evento', $data) && !empty($data['tipo_evento'])) {
             $data['tipo_evento'] = $this->normalizeTipoEvento($data['tipo_evento']);
         }
 
-        // Status: se não vier, preserva o atual (evita erro de "required").
         if (!array_key_exists('status', $data) || $data['status'] === null || $data['status'] === '') {
             $data['status'] = $evento->status ?? 'rascunho';
         }
 
-        // Coordenador padrão.
         if (empty($data['coordenador_id']) && auth()->check()) {
             $data['coordenador_id'] = auth()->id();
         }
 
-        $evento->update($data);
+        DB::transaction(function () use ($evento, $data, $request) {
+            $evento->update($data);
+            $this->persistProgramacaoDoRequest($request, $evento);
+        });
 
         return redirect()
             ->route('eventos.show', $evento)
             ->with('success', 'Evento atualizado com sucesso!');
     }
 
-    /**
-     * Remover evento.
-     */
     public function destroy(Event $evento)
     {
-        abort_unless(Gate::allows('manage-users'), 403);
-
+        $this->authorize('manage-users');
         $evento->delete();
-
         return redirect()
             ->route('eventos.index')
-            ->with('success', 'Evento deletado com sucesso!');
+            ->with('success', 'Evento removido.');
     }
 
-    /**
-     * Normaliza valores de tipo_evento para os slugs aceitos pela validação.
-     */
-    private function normalizeTipoEvento(string $valor): string
-    {
-        $map = [
-            'presencial'            => 'presencial',
-            'online'                => 'online',
-            'hibrido'               => 'hibrido',
-            'híbrido'               => 'hibrido',
-            'videoconf'             => 'videoconf',
-            'videoconf.'            => 'videoconf',
-            'videoconferência'      => 'videoconf',
-            'videoconferencia'      => 'videoconf',
-            'presencial '           => 'presencial',
-        ];
+    /* =======================================================================
+     * Helpers
+     * ======================================================================= */
 
-        $v = trim(mb_strtolower($valor, 'UTF-8'));
-        return $map[$v] ?? $v;
+    /**
+     * Salva Locais, Palestrantes e Atividades recebidas do Passo 4 do wizard.
+     */
+    protected function persistProgramacaoDoRequest(Request $request, Event $evento): void
+    {
+        $localIdMap   = [];
+        $localNameMap = [];
+
+        /* -------- LOCAIS -------- */
+        foreach ((array) $request->input('locais', []) as $idx => $l) {
+            $nome = trim($l['nome'] ?? '');
+            if ($nome === '') {
+                continue;
+            }
+
+            $attrs = ['nome' => $nome];
+            if (Schema::hasColumn('locais', 'evento_id')) {
+                $attrs['evento_id'] = $evento->id;
+            }
+
+            $local = Local::firstOrCreate($attrs, $attrs);
+            $key = "row{$idx}";
+            $localIdMap[$key]   = $local->id;
+            $localNameMap[$key] = $local->nome;
+        }
+
+        /* -------- PALESTRANTES -------- */
+        $palestrantesIds = [];
+        foreach ((array) $request->input('palestrantes', []) as $p) {
+            $nome = trim($p['nome'] ?? '');
+            if ($nome === '') {
+                continue;
+            }
+
+            $email = trim((string) ($p['email'] ?? ''));
+
+            // Evita duplicidade
+            $pal = null;
+            if ($email !== '') {
+                $pal = Palestrante::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'nome'     => $nome,
+                        'cargo'    => $p['cargo']    ?? null,
+                        'mini_bio' => $p['mini_bio'] ?? null,
+                        'foto_url' => $p['foto_url'] ?? null,
+                    ]
+                );
+            }
+            if (!$pal) {
+                $pal = Palestrante::firstOrCreate(
+                    ['nome' => $nome],
+                    [
+                        'email'    => $email ?: null,
+                        'cargo'    => $p['cargo']    ?? null,
+                        'mini_bio' => $p['mini_bio'] ?? null,
+                        'foto_url' => $p['foto_url'] ?? null,
+                    ]
+                );
+            }
+
+            $palestrantesIds[] = $pal->id;
+        }
+        if (!empty($palestrantesIds) && method_exists($evento, 'palestrantes')) {
+            $evento->palestrantes()->syncWithoutDetaching($palestrantesIds);
+        }
+
+        /* -------- ATIVIDADES (EventoDetalhe) -------- */
+        foreach ((array) $request->input('atividades', []) as $a) {
+            $titulo = trim($a['titulo'] ?? '');
+            if ($titulo === '') {
+                continue;
+            }
+
+            $det = new EventoDetalhe();
+            $det->evento_id = $evento->id;
+
+            // Tabela tem 'descricao' (não 'titulo')
+            $det->descricao  = $a['descricao'] ?? $titulo;
+
+            // Tabela tem 'modalidade' (não 'tipo')
+            $det->modalidade = $a['tipo'] ?? ($a['modalidade'] ?? null);
+
+            $inicio = $a['inicio'] ?? null;
+            $fim    = $a['fim']    ?? null;
+
+            // Modelo atual: data + hora_*
+            $det->data        = $inicio ? Carbon::parse($inicio)->toDateString() : null;
+            $det->hora_inicio = $inicio ? Carbon::parse($inicio)->format('H:i:s') : null;
+            $det->hora_fim    = $fim    ? Carbon::parse($fim)->format('H:i:s')    : null;
+
+            // local: se existir local_id usa id; senão 'localidade' com nome
+            $localKey = $a['local_key'] ?? null;
+            if ($localKey) {
+                if (Schema::hasColumn('eventos_detalhes', 'local_id')) {
+                    $det->local_id = $localIdMap[$localKey] ?? null;
+                } elseif (Schema::hasColumn('eventos_detalhes', 'localidade')) {
+                    $det->localidade = $localNameMap[$localKey] ?? null;
+                }
+            }
+
+            if (Schema::hasColumn('eventos_detalhes', 'capacidade')) {
+                $det->capacidade = $a['capacidade'] ?? null;
+            }
+            if (Schema::hasColumn('eventos_detalhes', 'requer_inscricao')) {
+                $det->requer_inscricao = (bool)($a['requer_inscricao'] ?? false);
+            }
+
+            $det->save();
+        }
+    }
+
+    protected function normalizeTipoEvento(string $tipo): string
+    {
+        $tipo  = strtolower(trim($tipo));
+        $valid = ['presencial', 'online', 'hibrido', 'videoconf'];
+        return in_array($tipo, $valid, true) ? $tipo : 'presencial';
     }
 }

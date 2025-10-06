@@ -2,82 +2,164 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreEventoDetalheRequest;
-use App\Http\Requests\UpdateEventoDetalheRequest;
 use App\Models\Event;
 use App\Models\EventoDetalhe;
+use App\Models\Local;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Gate;
 
 class EventoDetalheController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    // ---------------------
+    // LISTA por EVENTO
+    // ---------------------
+    public function indexByEvent(Event $evento)
+    {
+        $this->authorizeManage();
+
+        $evento->load(['detalhes.local']);
+        return view('eventos.programacao.index', [
+            'evento'  => $evento,
+            'itens'   => $evento->detalhes()->orderBy('data_hora_inicio')->get(),
+        ]);
+    }
+
+    // ---------------------
+    // FORM - criar por EVENTO
+    // ---------------------
+    public function createForEvent(Event $evento)
+    {
+        $this->authorizeManage();
+
+        return view('eventos.programacao.create', [
+            'evento' => $evento,
+            'locais' => Local::orderBy('nome')->get(),
+        ]);
+    }
+
+    // ---------------------
+    // STORE - por EVENTO
+    // ---------------------
+    public function storeForEvent(Request $r, Event $evento)
+    {
+        $this->authorizeManage();
+
+        $data = $r->validate([
+            'titulo'            => ['required','string','max:255'],
+            'descricao'         => ['nullable','string'],
+            'data_hora_inicio'  => ['required','date'],
+            'data_hora_fim'     => ['required','date','after_or_equal:data_hora_inicio'],
+            'local_id'          => ['nullable','uuid','exists:locais,id'],
+            // Campos extras opcionais
+            'requer_inscricao'  => ['nullable','boolean'],
+            'vagas'             => ['nullable','integer','min:1'],
+        ]);
+
+        $data['evento_id']        = $evento->id;
+        $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
+
+        EventoDetalhe::create($data);
+
+        return redirect()
+            ->route('eventos.programacao.index', $evento)
+            ->with('success', 'Atividade adicionada com sucesso.');
+    }
+
+    // ---------------------
+    // CRUD genérico (se quiser usar)
+    // ---------------------
+
     public function index()
     {
-        $detalhes = EventoDetalhe::with('evento')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $this->authorizeManage();
 
-        return view('eventos_detalhes.index', compact('detalhes'));
+        $itens = EventoDetalhe::with(['evento','local'])
+            ->orderByDesc('data_hora_inicio')
+            ->paginate(20);
+
+        return view('eventos_detalhes.index', compact('itens'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        $eventos = Event::all();
-        return view('eventos_detalhes.create', compact('eventos'));
+        $this->authorizeManage();
+
+        return view('eventos_detalhes.create', [
+            'eventos' => Event::orderBy('nome')->get(),
+            'locais'  => Local::orderBy('nome')->get(),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreEventoDetalheRequest $request)
+    public function store(Request $r)
     {
+        $this->authorizeManage();
 
-        EventoDetalhe::create($request->validated());
+        $data = $r->validate([
+            'evento_id'         => ['required','uuid','exists:eventos,id'],
+            'titulo'            => ['required','string','max:255'],
+            'descricao'         => ['nullable','string'],
+            'data_hora_inicio'  => ['required','date'],
+            'data_hora_fim'     => ['required','date','after_or_equal:data_hora_inicio'],
+            'local_id'          => ['nullable','uuid','exists:locais,id'],
+            'requer_inscricao'  => ['nullable','boolean'],
+            'vagas'             => ['nullable','integer','min:1'],
+        ]);
 
-        return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe criado com sucesso!');
+        $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
+
+        EventoDetalhe::create($data);
+
+        return redirect()->route('eventos_detalhes.index')->with('success','Atividade criada.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(EventoDetalhe $detalhe)
+    public function edit(EventoDetalhe $eventos_detalhe)
     {
-        $detalhe->load('evento');
-        return view('eventos_detalhes.show', compact('detalhe'));
+        $this->authorizeManage();
+
+        return view('eventos_detalhes.edit', [
+            'item'    => $eventos_detalhe,
+            'eventos' => Event::orderBy('nome')->get(),
+            'locais'  => Local::orderBy('nome')->get(),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(EventoDetalhe $detalhe)
+    public function update(Request $r, EventoDetalhe $eventos_detalhe)
     {
-        $eventos = Event::all();
-        return view('eventos_detalhes.edit', compact('detalhe', 'eventos'));
+        $this->authorizeManage();
+
+        $data = $r->validate([
+            'evento_id'         => ['required','uuid','exists:eventos,id'],
+            'titulo'            => ['required','string','max:255'],
+            'descricao'         => ['nullable','string'],
+            'data_hora_inicio'  => ['required','date'],
+            'data_hora_fim'     => ['required','date','after_or_equal:data_hora_inicio'],
+            'local_id'          => ['nullable','uuid','exists:locais,id'],
+            'requer_inscricao'  => ['nullable','boolean'],
+            'vagas'             => ['nullable','integer','min:1'],
+        ]);
+
+        $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
+
+        $eventos_detalhe->update($data);
+
+        return back()->with('success','Atividade atualizada.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateEventoDetalheRequest $request, EventoDetalhe $detalhe)
+    public function destroy(EventoDetalhe $eventos_detalhe)
     {
-        $detalhe->update($request->validated());
+        $this->authorizeManage();
 
-        return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe atualizado com sucesso!');
+        $eventos_detalhe->delete();
+
+        return back()->with('success','Atividade removida.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(EventoDetalhe $detalhe)
+    // ---------------------
+    private function authorizeManage(): void
     {
-        $detalhe->delete();
-
-        return redirect()->route('eventos_detalhes.index')->with('success', 'Detalhe deletado com sucesso!');
+        // Usa a gate que você já tem (manage-users)
+        if (!Gate::allows('manage-users')) {
+            abort(403);
+        }
     }
 }
