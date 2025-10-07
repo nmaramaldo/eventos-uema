@@ -15,7 +15,6 @@ class Event extends Model
 
     protected $table = 'eventos';
 
-    // UUID como chave primária
     public $incrementing = false;
     protected $keyType   = 'string';
 
@@ -24,7 +23,6 @@ class Event extends Model
         'nome',
         'descricao',
 
-        // NOVOS CAMPOS
         'tipo_classificacao',
         'area_tematica',
 
@@ -36,7 +34,6 @@ class Event extends Model
         'logomarca_url',
         'status',
 
-        // campo opcional para controle de vagas
         'vagas',
     ];
 
@@ -57,14 +54,6 @@ class Event extends Model
         });
     }
 
-    // ------------------------------------------------------------------
-    // Relacionamentos
-    // ------------------------------------------------------------------
-
-    /**
-     * Não usamos orderBy aqui para evitar erro em colunas que não existem.
-     * A ordenação é aplicada nos controllers com ->ordenado().
-     */
     public function detalhes(): HasMany
     {
         return $this->hasMany(EventoDetalhe::class, 'evento_id', 'id');
@@ -86,10 +75,6 @@ class Event extends Model
             ->belongsToMany(Palestrante::class, 'evento_palestrante', 'evento_id', 'palestrante_id')
             ->withTimestamps();
     }
-
-    // ------------------------------------------------------------------
-    // Helpers / Regras de negócio
-    // ------------------------------------------------------------------
 
     public function isAtivo(): bool
     {
@@ -140,7 +125,6 @@ class Event extends Model
         return trim("{$ini} — {$fim}");
     }
 
-    // Compat com views antigas
     public function periodo_evento(): string
     {
         return $this->getPeriodoEventoAttribute();
@@ -149,10 +133,6 @@ class Event extends Model
     {
         return $this->getPeriodoInscricaoAttribute();
     }
-
-    // ------------------------------------------------------------------
-    // Scopes
-    // ------------------------------------------------------------------
 
     public function scopeProximos($query)
     {

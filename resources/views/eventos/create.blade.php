@@ -1,328 +1,483 @@
-@extends('layouts.app')
+{{-- resources/views/eventos/create.blade.php --}}
+@extends('layouts.new-event')
 
 @section('title', 'Criar Evento - Eventos UEMA')
 
 @section('content')
-    <!-- Page Header -->
-    <section class="bg-gradient-to-r from-purple-600 to-blue-600 text-black py-12">
-        <div class="container mx-auto px-4">
-            <div class="max-w-4xl mx-auto text-center">
-                <h1 class="text-4xl font-bold mb-4">Criar Novo Evento</h1>
-                <p class="text-purple-100 text-lg">Compartilhe conhecimento e conecte-se com a comunidade universitária</p>
-            </div>
+<style>
+  .cardish{background:#fff;border:1px solid #eaeaea;border-radius:12px;padding:18px;box-shadow:0 1px 0 rgba(0,0,0,.02);margin-bottom:16px}
+  .muted{color:#6b7280;font-size:12px}
+  .mini-table th,.mini-table td{padding:6px 8px;font-size:13px}
+  #map {height: 280px; border-radius: 10px; border:1px solid #e5e7eb;}
+</style>
+
+<div class="container" style="max-width:1100px;padding:26px 0 40px">
+  <form id="eventoForm" action="{{ route('eventos.store') }}" method="POST" enctype="multipart/form-data" autocomplete="off" novalidate>
+    @csrf
+
+    {{-- ===================== Informações básicas ===================== --}}
+    <div class="cardish">
+      <h3 style="margin-top:0">Informações básicas</h3>
+
+      <div class="form-group">
+        <label>Título do evento *</label>
+        <input type="text" name="nome" class="form-control" value="{{ old('nome') }}" required>
+        @error('nome') <small class="text-danger">{{ $message }}</small> @enderror
+      </div>
+
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="form-group">
+            <label>Categoria *</label>
+            <select name="tipo_classificacao" class="form-control" required>
+              <option value="">Selecione uma categoria</option>
+              @foreach (['Tecnologia','Acadêmico','Cultural','Esportivo','Científico','Social','Competição','Workshop'] as $cat)
+                <option value="{{ $cat }}" @selected(old('tipo_classificacao')==$cat)>{{ $cat }}</option>
+              @endforeach
+            </select>
+            @error('tipo_classificacao') <small class="text-danger">{{ $message }}</small> @enderror
+          </div>
         </div>
-    </section>
 
-    <!-- Event Form -->
-    <section class="py-12">
-        <div class="container mx-auto px-4">
-            <div class="max-w-4xl mx-auto">
-                <form action="{{ route('eventos.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
-                    @csrf
-
-                    {{-- Informações Básicas --}}
-                    <div class="bg-white rounded-xl shadow-lg p-8">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                            <i class="fas fa-info-circle mr-3 text-purple-600"></i>
-                            Informações Básicas
-                        </h2>
-
-                        <div class="grid md:grid-cols-2 gap-6">
-                            {{-- Título --}}
-                            <div class="md:col-span-2">
-                                <label for="nome" class="block text-sm font-medium text-gray-700 mb-2">Título do Evento
-                                    *</label>
-                                <input type="text" id="nome" name="nome" value="{{ old('nome') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('nome') border-red-500 @enderror"
-                                    placeholder="Ex: Workshop de Desenvolvimento Web" required>
-                                @error('nome')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            {{-- Categoria --}}
-                            <div>
-                                <label for="tipo_classificacao"
-                                    class="block text-sm font-medium text-gray-700 mb-2">Categoria
-                                    *</label>
-                                <select id="tipo_classificacao" name="tipo_classificacao"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('tipo_classificacao') border-red-500 @enderror"
-                                    required>
-                                    <option value="">Selecione uma categoria</option>
-                                    @foreach (['Tecnologia', 'Acadêmico', 'Cultural', 'Esportivo', 'Científico', 'Social', 'Competição', 'Workshop'] as $cat)
-                                        <option value="{{ $cat }}"
-                                            {{ old('tipo_classificacao') == $cat ? 'selected' : '' }}>{{ $cat }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('tipo_classificacao')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            {{-- Imagem --}}
-                            <div>
-                                <label for="logomarca_url" class="block text-sm font-medium text-gray-700 mb-2">Imagem do
-                                    Evento</label>
-                                <div class="relative">
-                                    <input type="file" id="logomarca_url" name="logomarca_url" accept="image/*"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('logomarca_url') border-red-500 @enderror">
-                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                        <i class="fas fa-image text-gray-400"></i>
-                                    </div>
-                                </div>
-                                <p class="text-gray-500 text-sm mt-1">Formatos aceitos: JPG, PNG, GIF (máx. 2MB)</p>
-                                @error('logomarca_url')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-
-                        {{-- Descrição --}}
-                        <div class="mt-6">
-                            <label for="descricao" class="block text-sm font-medium text-gray-700 mb-2">Descrição do Evento
-                                *</label>
-                            <textarea id="descricao" name="descricao" rows="5"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('descricao') border-red-500 @enderror"
-                                placeholder="Descreva seu evento, objetivos, público-alvo e o que os participantes podem esperar..." required>{{ old('descricao') }}</textarea>
-                            @error('descricao')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-
-                    {{-- Tipo de Evento --}}
-                    <div class="bg-white rounded-xl shadow-lg p-8">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                            <i class="fas fa-laptop-house mr-3 text-purple-600"></i>
-                            Tipo de Evento
-                        </h2>
-
-                        <div class="flex gap-4">
-                            {{-- Online --}}
-                            <label class="flex items-center">
-                                <input type="radio" name="tipo_evento" value="online"
-                                    {{ old('tipo_evento') == 'online' ? 'checked' : '' }}
-                                    class="text-purple-600 focus:ring-purple-500" required>
-                                <span class="ml-2 text-gray-700">Online</span>
-                            </label>
-
-                            {{-- Presencial --}}
-                            <label class="flex items-center">
-                                <input type="radio" name="tipo_evento" value="presencial"
-                                    {{ old('tipo_evento') == 'presencial' ? 'checked' : '' }}
-                                    class="text-purple-600 focus:ring-purple-500">
-                                <span class="ml-2 text-gray-700">Presencial</span>
-                            </label>
-
-                            {{-- Híbrido --}}
-                            <label class="flex items-center">
-                                <input type="radio" name="tipo_evento" value="hibrido"
-                                    {{ old('tipo_evento') == 'hibrido' ? 'checked' : '' }}
-                                    class="text-purple-600 focus:ring-purple-500">
-                                <span class="ml-2 text-gray-700">Híbrido</span>
-                            </label>
-                        </div>
-
-                        @error('tipo_evento')
-                            <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Data e Horário --}}
-                    <div class="bg-white rounded-xl shadow-lg p-8">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                            <i class="fas fa-calendar-alt mr-3 text-purple-600"></i>
-                            Data
-                        </h2>
-
-                        <div class="grid md:grid-cols-3 gap-6">
-                            <div>
-                                <label for="data_inicio_evento" class="block text-sm font-medium text-gray-700 mb-2">Data
-                                    inicio Evento *</label>
-                                <input type="date" id="data_inicio_evento" name="data_inicio_evento"
-                                    value="{{ old('data_inicio_evento') }}" min="{{ date('Y-m-d') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('data_inicio_evento') border-red-500 @enderror"
-                                    required>
-                                @error('data_inicio_evento')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="data_fim_evento" class="block text-sm font-medium text-gray-700 mb-2">Data fim
-                                    Evento *</label>
-                                <input type="date" id="data_fim_evento" name="data_fim_evento"
-                                    value="{{ old('data_fim_evento') }}" min="{{ date('Y-m-d') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('data_fim_evento') border-red-500 @enderror"
-                                    required>
-                                @error('data_fim_evento')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Localização --}}
-                    <div class="bg-white rounded-xl shadow-lg p-8">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                            <i class="fas fa-map-marker-alt mr-3 text-purple-600"></i>
-                            Localização
-                        </h2>
-
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="area_tematica" class="block text-sm font-medium text-gray-700 mb-2">Local do
-                                    Evento *</label>
-                                <input type="text" id="local" name="area_tematica"
-                                    value="{{ old('area_tematica') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('area_tematica') border-red-500 @enderror"
-                                    placeholder="Ex: Auditório Central - Campus São Luís" required>
-                                @error('area_tematica')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Inscrições --}}
-                    <div class="bg-white rounded-xl shadow-lg p-8">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                            <i class="fas fa-users mr-3 text-purple-600"></i>
-                            Inscrições
-                        </h2>
-
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="data_inicio_inscricao"
-                                    class="block text-sm font-medium text-gray-700 mb-2">Data inicio inscrições</label>
-                                <input type="date" id="data_inicio_inscricao" name="data_inicio_inscricao"
-                                    value="{{ old('data_inicio_inscricao') }}" min="{{ date('Y-m-d') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('data_inicio_inscricao') border-red-500 @enderror">
-                                @error('data_inicio_inscricao')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="data_fim_inscricao" class="block text-sm font-medium text-gray-700 mb-2">Data
-                                    fim inscrições</label>
-                                <input type="date" id="data_fim_inscricao" name="data_fim_inscricao"
-                                    value="{{ old('data_fim_inscricao') }}" min="{{ date('Y-m-d') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('data_fim_inscricao') border-red-500 @enderror">
-                                @error('data_fim_inscricao')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="grid md:grid-cols-3 gap-6">
-                                <!-- Max Participants -->
-                                <div>
-                                    <label for="vagas_total" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Número de Vagas *
-                                    </label>
-                                    <input type="number" id="vagas_total" name="vagas_total"
-                                        value="{{ old('vagas_total') }}" min="1" max="1000"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 @error('vagas_total') border-red-500 @enderror"
-                                        required>
-                                    @error('vagas_total')
-                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                            </div>
-
-                            <div class="mt-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Status do Evento</label>
-                                <div class="flex items-center space-x-6">
-                                    <label class="flex items-center">
-                                        <input type="radio" name="status" value="ativo"
-                                            {{ old('status', 'ativo') == 'ativo' ? 'checked' : '' }}
-                                            class="text-purple-600 focus:ring-purple-500">
-                                        <span class="ml-2 text-gray-700">Ativo (visível para todos)</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="status" value="rascunho"
-                                            {{ old('status') == 'rascunho' ? 'checked' : '' }}
-                                            class="text-purple-600 focus:ring-purple-500">
-                                        <span class="ml-2 text-gray-700">Rascunho (apenas você pode ver)</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Ações do Form --}}
-                        <div class="bg-white rounded-xl shadow-lg p-8">
-                            <div class="flex flex-col md:flex-row gap-4 justify-between">
-                                <a href="{{ route('eventos.index') }}"
-                                    class="bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-lg font-semibold text-center transition-colors">
-                                    <i class="fas fa-times mr-2"></i>Cancelar
-                                </a>
-
-                                <div class="flex gap-4">
-                                    <button type="submit" name="action" value="draft"
-                                        class="bg-yellow-500 hover:bg-yellow-600 text-white px-8 py-4 rounded-lg font-semibold transition-colors">
-                                        <i class="fas fa-save mr-2"></i>Salvar Rascunho
-                                    </button>
-                                    <button type="submit" name="action" value="publish"
-                                        class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-lg font-semibold transition-colors">
-                                        <i class="fas fa-rocket mr-2"></i>Publicar Evento
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                </form>
-            </div>
+        <div class="col-sm-6">
+          <div class="form-group">
+            <label>Imagem do evento</label>
+            {{-- o controller espera "capa" e salva URL em logomarca_url --}}
+            <input type="file" name="capa" accept="image/*" class="form-control">
+            <small class="muted">Formatos: JPG, PNG, GIF (máx. 3MB)</small>
+            @error('capa') <small class="text-danger">{{ $message }}</small> @enderror
+          </div>
         </div>
-    </section>
+      </div>
+
+      <div class="form-group">
+        <label>Descrição do evento</label>
+        <textarea name="descricao" rows="5" class="form-control">{{ old('descricao') }}</textarea>
+        @error('descricao') <small class="text-danger">{{ $message }}</small> @enderror
+      </div>
+    </div>
+
+    {{-- ===================== Tipo de evento ===================== --}}
+    <div class="cardish">
+      <h3 style="margin-top:0">Tipo de evento</h3>
+      <label class="radio-inline">
+        <input type="radio" name="tipo_evento" value="online" @checked(old('tipo_evento')==='online') required> Online
+      </label>
+      <label class="radio-inline" style="margin-left:10px">
+        <input type="radio" name="tipo_evento" value="presencial" @checked(old('tipo_evento')==='presencial')> Presencial
+      </label>
+      <label class="radio-inline" style="margin-left:10px">
+        <input type="radio" name="tipo_evento" value="hibrido" @checked(old('tipo_evento')==='hibrido')> Híbrido
+      </label>
+      @error('tipo_evento') <div><small class="text-danger">{{ $message }}</small></div> @enderror
+    </div>
+
+    {{-- ===================== Data (com calendário + hora) ===================== --}}
+    @php
+      $oldIni = old('data_inicio_evento');
+      $oldFim = old('data_fim_evento');
+      $iniDate = $oldIni ? \Carbon\Carbon::parse($oldIni)->format('Y-m-d') : '';
+      $iniTime = $oldIni ? \Carbon\Carbon::parse($oldIni)->format('H:i')   : '';
+      $fimDate = $oldFim ? \Carbon\Carbon::parse($oldFim)->format('Y-m-d') : '';
+      $fimTime = $oldFim ? \Carbon\Carbon::parse($oldFim)->format('H:i')   : '';
+    @endphp
+
+    <div class="cardish">
+      <h3 style="margin-top:0">Data</h3>
+
+      {{-- ocultos que o backend usa --}}
+      <input type="hidden" name="data_inicio_evento" id="dtInicioFull">
+      <input type="hidden" name="data_fim_evento"    id="dtFimFull">
+
+      <div class="row">
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Data início do evento *</label>
+            <input type="date" id="dtInicioDate" value="{{ $iniDate }}" min="{{ date('Y-m-d') }}" class="form-control" required>
+          </div>
+        </div>
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Hora início *</label>
+            <input type="time" id="dtInicioTime" value="{{ $iniTime }}" min="06:00" max="22:00" step="900" list="horarios" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Data fim do evento *</label>
+            <input type="date" id="dtFimDate" value="{{ $fimDate }}" min="{{ date('Y-m-d') }}" class="form-control" required>
+          </div>
+        </div>
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Hora fim *</label>
+            <input type="time" id="dtFimTime" value="{{ $fimTime }}" min="06:00" max="22:00" step="900" list="horarios" class="form-control" required>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{-- ===================== Localização (1 local + mapa com busca) ===================== --}}
+    <div class="cardish">
+      <h3 style="margin-top:0">Localização</h3>
+
+      {{-- Campo legado ainda usado em páginas públicas (mantemos) --}}
+      <div class="form-group">
+        <label>Local do evento (texto livre)</label>
+        <input type="text" name="area_tematica" value="{{ old('area_tematica') }}" class="form-control" placeholder="Ex.: Auditório Central - Campus São Luís">
+        <small class="muted">Você pode preencher manualmente ou escolher abaixo no mapa para gravar o mesmo local em <em>Locais</em>.</small>
+        @error('area_tematica') <small class="text-danger">{{ $message }}</small> @enderror
+      </div>
+
+      {{-- Locais para o persistProgramacaoDoRequest (apenas 1) --}}
+      <input type="hidden" name="locais[0][nome]" id="localNomeHidden">
+
+      <div class="form-group">
+        <label>Pesquisar no mapa (OpenStreetMap)</label>
+        <div id="map"></div>
+        <small class="muted">Pesquise e clique no mapa. Salvaremos o local escolhido.</small>
+      </div>
+    </div>
+
+    {{-- ===================== Palestrantes ===================== --}}
+    <div class="cardish">
+      <h3 style="margin-top:0">Palestrantes</h3>
+
+      <div class="row" style="gap:10px">
+        <div class="col-sm-3"><input id="palNome" class="form-control" placeholder="Nome"></div>
+        <div class="col-sm-3"><input id="palEmail" class="form-control" placeholder="E-mail (opcional)"></div>
+        <div class="col-sm-3"><input id="palCargo" class="form-control" placeholder="Cargo/Instituição (opcional)"></div>
+        <div class="col-sm-2"><button type="button" class="btn btn-default" id="btnAddPal">+ Adicionar</button></div>
+      </div>
+
+      <div style="margin-top:10px">
+        <table class="table table-bordered mini-table" id="tblPalestrantes">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Cargo/Inst.</th><th style="width:70px">Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    {{-- ===================== Programação ===================== --}}
+    <div class="cardish">
+      <h3 style="margin-top:0">Programação</h3>
+
+      <div class="row" style="gap:10px">
+        <div class="col-sm-3"><input id="atvTitulo" class="form-control" placeholder="Título"></div>
+        <div class="col-sm-2">
+          <select id="atvTipo" class="form-control">
+            <option value="">Tipo</option>
+            <option>Palestra</option>
+            <option>Minicurso</option>
+            <option>Mesa-redonda</option>
+            <option>Conferência</option>
+            <option>Apresentação de Trabalho</option>
+            <option>Oficina</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="col-sm-2"><input id="atvInicio" type="datetime-local" class="form-control"></div>
+        <div class="col-sm-2"><input id="atvFim" type="datetime-local" class="form-control"></div>
+        <div class="col-sm-2">
+          <select id="atvLocal" class="form-control"><option value="">Local</option></select>
+        </div>
+        <div class="col-sm-1"><input id="atvCap" type="number" min="1" class="form-control" placeholder="Cap."></div>
+        <div class="col-sm-12" style="margin-top:8px">
+          <label class="checkbox-inline"><input type="checkbox" id="atvReqInscricao"> Requer inscrição</label>
+          <button type="button" class="btn btn-default pull-right" id="btnAddAtv">+ Adicionar atividade</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <table class="table table-bordered mini-table" id="tblAtividades">
+          <thead>
+            <tr>
+              <th>Título</th><th>Tipo</th><th>Início</th><th>Fim</th><th>Local</th><th>Cap.</th><th>Inscr.</th><th style="width:70px">Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    {{-- ===================== Inscrições (com calendário + hora) ===================== --}}
+    @php
+      $oldInsIni = old('data_inicio_inscricao');
+      $oldInsFim = old('data_fim_inscricao');
+      $insIniDate = $oldInsIni ? \Carbon\Carbon::parse($oldInsIni)->format('Y-m-d') : '';
+      $insIniTime = $oldInsIni ? \Carbon\Carbon::parse($oldInsIni)->format('H:i')   : '';
+      $insFimDate = $oldInsFim ? \Carbon\Carbon::parse($oldInsFim)->format('Y-m-d') : '';
+      $insFimTime = $oldInsFim ? \Carbon\Carbon::parse($oldInsFim)->format('H:i')   : '';
+    @endphp
+
+    <div class="cardish">
+      <h3 style="margin-top:0">Inscrições</h3>
+
+      {{-- ocultos que o backend usa --}}
+      <input type="hidden" name="data_inicio_inscricao" id="insInicioFull">
+      <input type="hidden" name="data_fim_inscricao"    id="insFimFull">
+
+      <div class="row">
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Data início inscrições</label>
+            <input type="date" id="insInicioDate" value="{{ $insIniDate }}" min="{{ date('Y-m-d') }}" class="form-control">
+          </div>
+        </div>
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Hora início</label>
+            <input type="time" id="insInicioTime" value="{{ $insIniTime }}" min="06:00" max="22:00" step="900" list="horarios" class="form-control">
+          </div>
+        </div>
+
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Data fim inscrições</label>
+            <input type="date" id="insFimDate" value="{{ $insFimDate }}" min="{{ date('Y-m-d') }}" class="form-control">
+          </div>
+        </div>
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Hora fim</label>
+            <input type="time" id="insFimTime" value="{{ $insFimTime }}" min="06:00" max="22:00" step="900" list="horarios" class="form-control">
+          </div>
+        </div>
+
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label>Número de vagas</label>
+            {{-- o request usa "vagas" --}}
+            <input type="number" min="1" name="vagas" value="{{ old('vagas') }}" class="form-control">
+            @error('vagas') <small class="text-danger">{{ $message }}</small> @enderror
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Status do evento</label><br>
+        <label class="radio-inline">
+          <input type="radio" name="status" value="ativo" @checked(old('status','ativo')==='ativo')> Ativo (visível)
+        </label>
+        <label class="radio-inline" style="margin-left:10px">
+          <input type="radio" name="status" value="rascunho" @checked(old('status')==='rascunho')> Rascunho
+        </label>
+      </div>
+
+      <div class="text-right">
+        <a href="{{ route('eventos.index') }}" class="btn btn-default">Cancelar</a>
+        <button type="submit" name="action" value="draft" class="btn btn-warning">Salvar Rascunho</button>
+        <button type="submit" name="action" value="publish" class="btn btn-primary">Publicar Evento</button>
+      </div>
+    </div>
+
+    {{-- sugestões de horários (06:00 → 22:00 a cada 30 min) --}}
+    <datalist id="horarios">
+      @php
+        for ($m = 6*60; $m <= 22*60; $m += 30) {
+            echo '<option value="'.sprintf('%02d:%02d', intdiv($m,60), $m%60).'"></option>';
+        }
+      @endphp
+    </datalist>
+  </form>
+</div>
+
+{{-- Leaflet (mapa sem chave) --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+{{-- Script que junta data + hora, e gerencia mapa/palestrantes/atividades --}}
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const form = document.getElementById('eventoForm');
+
+  /* ======= Datas do Evento/Inscrição ======= */
+  function joinDateTime(dateEl, timeEl, targetEl, defaultTime='08:00') {
+    const d = dateEl?.value?.trim();
+    const t = timeEl?.value?.trim() || '';
+    if (!d) { targetEl.value = ''; return; }
+    const hhmm = t !== '' ? t : defaultTime;
+    targetEl.value = d + ' ' + hhmm + ':00';
+  }
+  function clampTime(timeEl) {
+    if (!timeEl || !timeEl.value) return;
+    const min = timeEl.min || '06:00';
+    const max = timeEl.max || '22:00';
+    if (timeEl.value < min) timeEl.value = min;
+    if (timeEl.value > max) timeEl.value = max;
+  }
+  function updateAllDateTimes() {
+    ['dtInicioTime','dtFimTime','insInicioTime','insFimTime'].forEach(id => clampTime($(id)));
+    joinDateTime($('dtInicioDate'), $('dtInicioTime'), $('dtInicioFull'));
+    joinDateTime($('dtFimDate'),    $('dtFimTime'),    $('dtFimFull'));
+    joinDateTime($('insInicioDate'), $('insInicioTime'), $('insInicioFull'));
+    joinDateTime($('insFimDate'),    $('insFimTime'),    $('insFimFull'));
+  }
+  ['dtInicioDate','dtInicioTime','dtFimDate','dtFimTime','insInicioDate','insInicioTime','insFimDate','insFimTime']
+    .forEach(id => { const el = $(id); el && el.addEventListener('input', updateAllDateTimes); });
+  document.addEventListener('DOMContentLoaded', updateAllDateTimes);
+  form?.addEventListener('submit', function(){ updateAllDateTimes(); ensureHiddenCollections(); });
+
+  /* ======= Mapa (Leaflet + Geocoder) ======= */
+  let locais = []; // {key, nome}
+  const localNomeHidden = $('localNomeHidden');
+  const atvLocalSelect  = $('atvLocal');
+
+  let map, marker;
+  try {
+    map = L.map('map').setView([-2.532, -44.296], 12); // São Luís/MA aprox
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+    const geocoder = L.Control.Geocoder.nominatim();
+    const searchControl = L.Control.geocoder({
+      defaultMarkGeocode: false,
+      geocoder: geocoder,
+      placeholder: 'Pesquise endereço, prédio, campus…'
+    }).on('markgeocode', function(e) {
+      const center = e.geocode.center;
+      setPoint(center.lat, center.lng, e.geocode.name || 'Local do evento');
+    }).addTo(map);
+
+    map.on('click', function(e){
+      setPoint(e.latlng.lat, e.latlng.lng, 'Local escolhido no mapa');
+    });
+
+    function setPoint(lat, lng, label) {
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([lat, lng]).addTo(map);
+      const nome = `${label} (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+      // Mantemos 1 local: row0
+      locais = [{ key: 'row0', nome }];
+      localNomeHidden.value = nome;
+      redrawLocaisOnSelect();
+    }
+
+  } catch(e) {
+    // se Leaflet não carregar, seguimos só com o campo texto
+    console.warn('Mapa indisponível:', e);
+  }
+
+  function redrawLocaisOnSelect(){
+    if (!atvLocalSelect) return;
+    atvLocalSelect.innerHTML = '<option value="">Local</option>';
+    locais.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l.key; opt.textContent = l.nome;
+      atvLocalSelect.appendChild(opt);
+    });
+  }
+
+  /* ======= Palestrantes ======= */
+  const tblPales = document.querySelector('#tblPalestrantes tbody');
+  const pal = [];
+  function redrawPales(){
+    if (!tblPales) return;
+    tblPales.innerHTML = '';
+    // limpar inputs ocultos anteriores
+    document.querySelectorAll('input[name^="palestrantes["]').forEach(x=>x.remove());
+    pal.forEach(function(p, i){
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+p.nome+'</td><td>'+(p.email||'')+'</td><td>'+(p.cargo||'')+'</td>'+
+                     '<td><button class="btn btn-xs btn-danger" data-i="'+i+'" type="button">rem</button></td>';
+      tblPales.appendChild(tr);
+
+      addHidden('palestrantes['+i+'][nome]',  p.nome);
+      if (p.email) addHidden('palestrantes['+i+'][email]', p.email);
+      if (p.cargo) addHidden('palestrantes['+i+'][cargo]', p.cargo);
+    });
+  }
+  document.getElementById('btnAddPal')?.addEventListener('click', function(){
+    const n = (document.getElementById('palNome').value || '').trim();
+    const m = (document.getElementById('palEmail').value || '').trim();
+    const c = (document.getElementById('palCargo').value || '').trim();
+    if (!n) return;
+    pal.push({nome:n, email:m||null, cargo:c||null});
+    document.getElementById('palNome').value='';
+    document.getElementById('palEmail').value='';
+    document.getElementById('palCargo').value='';
+    redrawPales();
+  });
+  tblPales?.addEventListener('click', function(e){
+    if (e.target && e.target.matches('button[data-i]')) {
+      pal.splice(parseInt(e.target.dataset.i),1);
+      redrawPales();
+    }
+  });
+
+  /* ======= Atividades ======= */
+  const tblAtivs = document.querySelector('#tblAtividades tbody');
+  const atividades = [];
+  function localName(key){
+    const l = locais.find(x=>x.key===key); return l ? l.nome : '';
+  }
+  function redrawAtivs(){
+    if (!tblAtivs) return;
+    tblAtivs.innerHTML = '';
+    document.querySelectorAll('input[name^="atividades["]').forEach(x=>x.remove());
+    atividades.forEach(function(a, i){
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>'+a.titulo+'</td><td>'+(a.tipo||'')+'</td>'+
+                     '<td>'+(a.inicio||'')+'</td><td>'+(a.fim||'')+'</td>'+
+                     '<td>'+(localName(a.local_key)||'')+'</td>'+
+                     '<td>'+(a.capacidade||'')+'</td>'+
+                     '<td>'+(a.requer_inscricao ? 'Sim':'Não')+'</td>'+
+                     '<td><button class="btn btn-xs btn-danger" data-i="'+i+'" type="button">rem</button></td>';
+      tblAtivs.appendChild(tr);
+
+      addHidden('atividades['+i+'][titulo]', a.titulo);
+      if (a.tipo) addHidden('atividades['+i+'][tipo]', a.tipo);
+      if (a.inicio) addHidden('atividades['+i+'][inicio]', a.inicio);
+      if (a.fim) addHidden('atividades['+i+'][fim]', a.fim);
+      if (a.local_key) addHidden('atividades['+i+'][local_key]', a.local_key);
+      if (a.capacidade) addHidden('atividades['+i+'][capacidade]', a.capacidade);
+      addHidden('atividades['+i+'][requer_inscricao]', a.requer_inscricao ? 1 : 0);
+    });
+  }
+  document.getElementById('btnAddAtv')?.addEventListener('click', function(){
+    const t   = (document.getElementById('atvTitulo').value || '').trim();
+    if (!t) return;
+    const tp  = document.getElementById('atvTipo').value || null;
+    const ini = document.getElementById('atvInicio').value || null;
+    const fim = document.getElementById('atvFim').value || null;
+    const l   = document.getElementById('atvLocal').value || null;
+    const cap = document.getElementById('atvCap').value || null;
+    const req = !!document.getElementById('atvReqInscricao').checked;
+
+    atividades.push({titulo:t, tipo:tp, inicio:ini, fim:fim, local_key:l, capacidade:cap, requer_inscricao:req});
+
+    ['atvTitulo','atvTipo','atvInicio','atvFim','atvLocal','atvCap'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('atvReqInscricao').checked=false;
+
+    redrawAtivs();
+  });
+  tblAtivs?.addEventListener('click', function(e){
+    if (e.target && e.target.matches('button[data-i]')) {
+      atividades.splice(parseInt(e.target.dataset.i),1);
+      redrawAtivs();
+    }
+  });
+
+  /* ======= Utilitários ======= */
+  const formEl = document.getElementById('eventoForm');
+  function addHidden(name, value){
+    if (!formEl) return;
+    const input = document.createElement('input');
+    input.type = 'hidden'; input.name = name; input.value = value;
+    formEl.appendChild(input);
+  }
+  function ensureHiddenCollections(){
+    // garante que os inputs ocultos existam antes de enviar
+    redrawPales();
+    redrawAtivs();
+    // se escolheu local no mapa e não tocou mais, certifique hidden
+    if (locais.length) localNomeHidden.value = locais[0].nome;
+    redrawLocaisOnSelect();
+  }
+
+})();
+</script>
 @endsection
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const startTime = document.getElementById('horario_inicio');
-            const endTime = document.getElementById('horario_fim');
-            const imageInput = document.getElementById('imagem');
-            const form = document.querySelector('form');
-
-            // Auto-fill end time (+2h)
-            startTime?.addEventListener('change', function() {
-                if (this.value && !endTime.value) {
-                    const start = new Date('2000-01-01 ' + this.value);
-                    start.setHours(start.getHours() + 2);
-                    endTime.value = start.toTimeString().slice(0, 5);
-                }
-            });
-
-            // Image preview
-            imageInput?.addEventListener('change', function() {
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        let preview = document.getElementById('image-preview');
-                        if (!preview) {
-                            preview = document.createElement('div');
-                            preview.id = 'image-preview';
-                            preview.className = 'mt-4';
-                            imageInput.parentNode.appendChild(preview);
-                        }
-                        preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="w-32 h-32 object-cover rounded-lg border">
-                <p class="text-sm text-gray-500 mt-2">Preview da imagem</p>`;
-                    };
-                    reader.readAsDataURL(this.files[0]);
-                }
-            });
-
-            // Confirmation for publishing
-            form?.addEventListener('submit', function(e) {
-                const action = e.submitter?.value;
-                if (action === 'publish' && !confirm(
-                        'Tem certeza que deseja publicar este evento? Ele ficará visível para todos os usuários.'
-                    )) {
-                    e.preventDefault();
-                }
-            });
-        });
-    </script>
-@endpush

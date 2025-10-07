@@ -14,12 +14,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Gate;
 
 class EventController extends Controller
 {
     public function index(Request $request)
     {
-        $this->authorize('manage-users');
+        Gate::authorize('manage-users');
 
         $q      = trim((string) $request->query('q', ''));
         $status = $request->query('status');
@@ -29,7 +30,7 @@ class EventController extends Controller
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $w->where('nome', 'like', "%{$q}%")
-                    ->orWhere('descricao', 'like', "%{$q}%");
+                  ->orWhere('descricao', 'like', "%{$q}%");
             });
         }
 
@@ -44,18 +45,20 @@ class EventController extends Controller
 
     public function create()
     {
-        $this->authorize('manage-users');
+        Gate::authorize('manage-users');
+
         $coordenadores = User::orderBy('name')->get();
+        // mantém o formulário novo
         return view('eventos.create', compact('coordenadores'));
     }
 
     public function store(StoreEventRequest $request)
     {
-        $this->authorize('manage-users');
+        Gate::authorize('manage-users');
 
         $data = $request->validated();
 
-        // upload de capa (opcional) -> salva em logomarca_url (URL pública)
+        // Upload de capa (campo "capa" -> salva URL pública em logomarca_url)
         if ($request->hasFile('capa')) {
             $path = $request->file('capa')->store('capas', 'public');
             $data['logomarca_url'] = Storage::url($path);
@@ -66,6 +69,7 @@ class EventController extends Controller
         }
 
         $data['status'] = $data['status'] ?? 'rascunho';
+
         if (empty($data['coordenador_id']) && auth()->check()) {
             $data['coordenador_id'] = auth()->id();
         }
@@ -83,17 +87,17 @@ class EventController extends Controller
 
     public function show(Event $evento)
     {
-        $this->authorize('manage-users');
+        Gate::authorize('manage-users');
 
         $evento->load([
             'coordenador',
             'inscricoes',
             'palestrantes',
-            'detalhes' => fn($q) => $q->ordenado(),
+            'detalhes' => fn ($q) => $q->ordenado(),
         ]);
 
         $relacionados = Event::where('id', '!=', $evento->id)
-            ->when($evento->area_tematica, fn($q) => $q->where('area_tematica', $evento->area_tematica))
+            ->when($evento->area_tematica, fn ($q) => $q->where('area_tematica', $evento->area_tematica))
             ->whereIn('status', ['ativo', 'publicado'])
             ->orderBy('data_inicio_evento', 'asc')
             ->take(6)
@@ -104,18 +108,19 @@ class EventController extends Controller
 
     public function edit(Event $evento)
     {
-        $this->authorize('manage-users');
+        Gate::authorize('manage-users');
+
         $coordenadores = User::orderBy('name')->get();
-        return view('eventos.wizard', compact('evento', 'coordenadores'));
+        // mantém o formulário novo também na edição
+        return view('eventos.edit', compact('evento', 'coordenadores'));
     }
 
     public function update(UpdateEventRequest $request, Event $evento)
     {
-        $this->authorize('manage-users');
+        Gate::authorize('manage-users');
 
         $data = $request->validated();
 
-        // upload de capa (opcional)
         if ($request->hasFile('capa')) {
             $path = $request->file('capa')->store('capas', 'public');
             $data['logomarca_url'] = Storage::url($path);
@@ -145,8 +150,10 @@ class EventController extends Controller
 
     public function destroy(Event $evento)
     {
-        $this->authorize('manage-users');
+        Gate::authorize('manage-users');
+
         $evento->delete();
+
         return redirect()
             ->route('eventos.index')
             ->with('success', 'Evento removido.');
@@ -157,7 +164,8 @@ class EventController extends Controller
      * ======================================================================= */
 
     /**
-     * Salva Locais, Palestrantes e Atividades recebidas do Passo 4 do wizard.
+     * Persiste locais, palestrantes e atividades (programação) vindos do request.
+     * Este método é tolerante ao schema: só envia colunas que realmente existem.
      */
     protected function persistProgramacaoDoRequest(Request $request, Event $evento): void
     {
@@ -177,6 +185,7 @@ class EventController extends Controller
             }
 
             $local = Local::firstOrCreate($attrs, $attrs);
+
             $key = "row{$idx}";
             $localIdMap[$key]   = $local->id;
             $localNameMap[$key] = $local->nome;
@@ -192,7 +201,6 @@ class EventController extends Controller
 
             $email = trim((string) ($p['email'] ?? ''));
 
-            // Evita duplicidade
             $pal = null;
             if ($email !== '') {
                 $pal = Palestrante::firstOrCreate(
@@ -224,47 +232,45 @@ class EventController extends Controller
         }
 
         /* -------- ATIVIDADES (EventoDetalhe) -------- */
+        $colsDetalhe = Schema::getColumnListing('eventos_detalhes');
+
         foreach ((array) $request->input('atividades', []) as $a) {
             $titulo = trim($a['titulo'] ?? '');
             if ($titulo === '') {
                 continue;
             }
 
-            $det = new EventoDetalhe();
-            $det->evento_id = $evento->id;
-
-            // Tabela tem 'descricao' (não 'titulo')
-            $det->descricao  = $a['descricao'] ?? $titulo;
-
-            // Tabela tem 'modalidade' (não 'tipo')
-            $det->modalidade = $a['tipo'] ?? ($a['modalidade'] ?? null);
-
             $inicio = $a['inicio'] ?? null;
             $fim    = $a['fim']    ?? null;
 
-            // Modelo atual: data + hora_*
-            $det->data        = $inicio ? Carbon::parse($inicio)->toDateString() : null;
-            $det->hora_inicio = $inicio ? Carbon::parse($inicio)->format('H:i:s') : null;
-            $det->hora_fim    = $fim    ? Carbon::parse($fim)->format('H:i:s')    : null;
+            $attrs = [
+                'evento_id'   => $evento->id,
+                'descricao'   => $a['descricao'] ?? $titulo,                                  // tabela usa 'descricao'
+                'modalidade'  => $a['tipo'] ?? ($a['modalidade'] ?? null),                    // tabela usa 'modalidade'
+                'data'        => $inicio ? Carbon::parse($inicio)->toDateString() : null,
+                'hora_inicio' => $inicio ? Carbon::parse($inicio)->format('H:i:s') : null,
+                'hora_fim'    => $fim    ? Carbon::parse($fim)->format('H:i:s')    : null,
+            ];
 
-            // local: se existir local_id usa id; senão 'localidade' com nome
+            // Local: se existir 'local_id' usa id; senão, se existir 'localidade', usa nome
             $localKey = $a['local_key'] ?? null;
             if ($localKey) {
-                if (Schema::hasColumn('eventos_detalhes', 'local_id')) {
-                    $det->local_id = $localIdMap[$localKey] ?? null;
-                } elseif (Schema::hasColumn('eventos_detalhes', 'localidade')) {
-                    $det->localidade = $localNameMap[$localKey] ?? null;
+                if (in_array('local_id', $colsDetalhe)) {
+                    $attrs['local_id'] = $localIdMap[$localKey] ?? null;
+                } elseif (in_array('localidade', $colsDetalhe)) {
+                    $attrs['localidade'] = $localNameMap[$localKey] ?? null;
                 }
             }
 
-            if (Schema::hasColumn('eventos_detalhes', 'capacidade')) {
-                $det->capacidade = $a['capacidade'] ?? null;
-            }
-            if (Schema::hasColumn('eventos_detalhes', 'requer_inscricao')) {
-                $det->requer_inscricao = (bool)($a['requer_inscricao'] ?? false);
+            if (in_array('capacidade', $colsDetalhe)) {
+                $attrs['capacidade'] = $a['capacidade'] ?? null;
             }
 
-            $det->save();
+            if (in_array('requer_inscricao', $colsDetalhe)) {
+                $attrs['requer_inscricao'] = (bool)($a['requer_inscricao'] ?? false);
+            }
+
+            EventoDetalhe::create($attrs);
         }
     }
 
