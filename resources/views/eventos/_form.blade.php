@@ -41,7 +41,8 @@
 
     <div class="form-group">
       <label>URL da logomarca (opcional)</label>
-      <input type="url" name="logomarca_url" class="form-control" value="{{ old('logomarca_url', $evento->logomarca_url ?? '') }}" placeholder="https://…">
+      <input type="url" name="logomarca_url" class="form-control"
+             value="{{ old('logomarca_url', $evento->logomarca_url ?? '') }}" placeholder="https://…">
       @error('logomarca_url') <small class="text-danger">{{ $message }}</small> @enderror
     </div>
 

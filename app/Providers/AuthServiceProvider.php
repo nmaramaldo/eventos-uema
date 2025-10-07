@@ -2,17 +2,19 @@
 
 namespace App\Providers;
 
+use App\Models\Event;
+use App\Policies\EventPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        // 'App\Models\Model' => 'App\Policies\ModelPolicy',
+        Event::class => EventPolicy::class,
     ];
 
     public function boot(): void
     {
-        // $this->registerPolicies(); // se usar policies
-        
+        $this->registerPolicies();
+        // NÃO definir 'manage-users' aqui (já está no AppServiceProvider para evitar conflitos).
     }
 }

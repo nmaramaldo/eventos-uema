@@ -19,7 +19,6 @@ class StoreEventRequest extends FormRequest
 
             'tipo_evento'           => ['required', 'string', 'in:presencial,online,hibrido,videoconf'],
 
-            // listas controladas no front; flexível no back
             'tipo_classificacao'    => ['nullable', 'string', 'max:255'],
             'area_tematica'         => ['nullable', 'string', 'max:255'],
 
@@ -32,15 +31,11 @@ class StoreEventRequest extends FormRequest
             'coordenador_id'        => ['nullable', 'uuid', 'exists:users,id'],
             'logomarca_url'         => ['nullable', 'url'],
 
-            // upload de capa (opcional)
             'capa'                  => ['sometimes', 'nullable', 'image', 'max:3072'],
 
-            // opcional
             'status'                => ['nullable', 'in:rascunho,ativo,publicado'],
 
-            // OPCIONAL – vagas
             'vagas'                 => ['sometimes', 'nullable', 'integer', 'min:1'],
-
         ];
     }
 

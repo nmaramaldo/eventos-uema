@@ -28,9 +28,7 @@ Route::get('/', [FrontController::class, 'home'])->name('front.home');
 
 // Listagem e detalhe públicos de eventos
 Route::prefix('eventos')->name('front.eventos.')->group(function () {
-    // OBS: o método correto na FrontController é "index"
     Route::get('/', [FrontController::class, 'index'])->name('index');
-    // {evento} usa implicit binding (UUID)
     Route::get('/{evento}', [FrontController::class, 'show'])->name('show');
 });
 
@@ -54,29 +52,31 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 | CRUDS DA APLICAÇÃO (PROTEGIDOS)
 |--------------------------------------------------------------------------
-| Prefixo /app para não colidir com as rotas públicas.
-| Os NOMES permanecem iguais (eventos.index, palestrantes.index, ...).
+| Prefixo /app. Apenas parte administrativa fica sob 'can:manage-users'.
 */
 
 Route::middleware('auth')->prefix('app')->group(function () {
-    // Atalho: /app -> /app/eventos
     Route::get('/', fn () => redirect()->route('eventos.index'))->name('app.home');
 
-    // Eventos e detalhes
-    Route::resource('eventos', EventController::class);
-    Route::resource('eventos_detalhes', EventoDetalheController::class);
+    // ---- Administrativo (admin/master) ----
+    Route::middleware('can:manage-users')->group(function () {
+        Route::resource('eventos', EventController::class);
+        Route::resource('eventos_detalhes', EventoDetalheController::class);
 
-    // Programação POR EVENTO (atalhos amigáveis)
-    Route::get('eventos/{evento}/programacao',        [EventoDetalheController::class, 'indexByEvent'])->name('eventos.programacao.index');
-    Route::get('eventos/{evento}/programacao/create', [EventoDetalheController::class, 'createForEvent'])->name('eventos.programacao.create');
-    Route::post('eventos/{evento}/programacao',       [EventoDetalheController::class, 'storeForEvent'])->name('eventos.programacao.store');
+        // Programação POR EVENTO (atalhos amigáveis)
+        Route::get('eventos/{evento}/programacao',        [EventoDetalheController::class, 'indexByEvent'])->name('eventos.programacao.index');
+        Route::get('eventos/{evento}/programacao/create', [EventoDetalheController::class, 'createForEvent'])->name('eventos.programacao.create');
+        Route::post('eventos/{evento}/programacao',       [EventoDetalheController::class, 'storeForEvent'])->name('eventos.programacao.store');
 
-    // Inscrições, certificados e palestrantes
+        // Inscrições (admin pode listar/gerir se existir lógica no controller)
+        Route::resource('certificados', CertificadoController::class);
+        Route::resource('palestrantes', PalestranteController::class);
+    });
+
+    // ---- Área do participante/logado ----
     Route::resource('inscricoes',   InscricaoController::class);
-    Route::resource('certificados', CertificadoController::class);
-    Route::resource('palestrantes', PalestranteController::class);
 
-    // Notificações
+    // Notificações (mantido para todos logados; ajuste se quiser restringir)
     Route::resource('notificacoes', NotificacaoController::class);
     Route::patch(
         'notificacoes/{notificacao}/marcar-como-lida',
@@ -88,8 +88,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
 |--------------------------------------------------------------------------
 | ADMIN (PROTEGIDO + PERMISSÃO)
 |--------------------------------------------------------------------------
-| Acesso permitido apenas para usuários com tipo 'admin' ou 'master'.
-| A gate 'manage-users' é definida no AppServiceProvider.
+| Apenas 'admin' ou 'master'.
 */
 
 Route::middleware(['auth', 'can:manage-users'])
@@ -102,9 +101,4 @@ Route::middleware(['auth', 'can:manage-users'])
         Route::patch('usuarios/{user}/tipo',      [UserAdminController::class, 'alterarTipo'])->name('usuarios.tipo');
     });
 
-/*
-|--------------------------------------------------------------------------
-| Auth scaffolding (login, register, etc.)
-|--------------------------------------------------------------------------
-*/
 require __DIR__ . '/auth.php';

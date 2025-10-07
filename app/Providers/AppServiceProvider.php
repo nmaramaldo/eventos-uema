@@ -25,12 +25,14 @@ class AppServiceProvider extends ServiceProvider
         // Apenas admin/master ATIVOS podem gerenciar usuários
         Gate::define('manage-users', function ($user) {
             $tipo = $user->tipo_usuario;
+
             if ($tipo instanceof \BackedEnum) {
                 $tipo = $tipo->value; // 'admin' | 'master'
             } elseif ($tipo instanceof \UnitEnum) {
                 $tipo = $tipo->name;
             }
-            return $user->ativo && in_array((string)$tipo, ['admin','master'], true);
+
+            return $user->ativo && in_array((string) $tipo, ['admin','master'], true);
         });
     }
 }
