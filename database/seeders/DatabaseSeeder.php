@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
             MasterUserSeeder::class,
         ]);
 
-        // 2) Usuário de teste (apenas em ambiente local)
+        // 2) Usuário de teste (apenas em local)
         if (app()->environment('local')) {
             User::factory()->create([
                 'name'         => 'Test User',

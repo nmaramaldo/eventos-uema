@@ -31,13 +31,11 @@ class UpdateEventRequest extends FormRequest
             'coordenador_id'        => ['sometimes', 'nullable', 'uuid', 'exists:users,id'],
             'logomarca_url'         => ['sometimes', 'nullable', 'url'],
 
-            // upload de capa (opcional)
             'capa'                  => ['sometimes', 'nullable', 'image', 'max:3072'],
 
             'status'                => ['sometimes', 'nullable', 'in:rascunho,ativo,publicado'],
             'vagas'                 => ['sometimes', 'nullable', 'integer', 'min:1'],
 
-            // Passo 4 – tudo opcional
             'locais'                        => ['sometimes', 'array'],
             'locais.*.nome'                 => ['required_with:locais', 'string', 'max:255'],
 
@@ -52,7 +50,7 @@ class UpdateEventRequest extends FormRequest
             'atividades.*.titulo'           => ['required_with:atividades', 'string', 'max:255'],
             'atividades.*.tipo'             => ['nullable', 'string', 'max:100'],
             'atividades.*.inicio'           => ['nullable', 'date'],
-            'atividades.*.fim'              => ['nullable', 'date'], // sem after_or_equal
+            'atividades.*.fim'              => ['nullable', 'date'],
             'atividades.*.local_key'        => ['nullable', 'string', 'max:255'],
             'atividades.*.capacidade'       => ['nullable', 'integer', 'min:1'],
             'atividades.*.requer_inscricao' => ['nullable', 'boolean'],

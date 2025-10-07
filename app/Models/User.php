@@ -66,8 +66,33 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'ativo'             => 'boolean',
-            'tipo_usuario'      => UserType::class, // enum de apoio
+            // Mantém o enum (se existir). O valor no banco deve ser compatível com App\Enums\UserType.
+            'tipo_usuario'      => UserType::class,
         ];
+    }
+
+    // ------------------------------------------------------------------
+    // Compat: expõe "tipo" espelhando "tipo_usuario"
+    // ------------------------------------------------------------------
+
+    /**
+     * Acessor: $user->tipo retorna o valor string do tipo (mesmo usando enum).
+     */
+    public function getTipoAttribute(): ?string
+    {
+        return $this->tipoUsuarioValue();
+    }
+
+    /**
+     * Mutator: permitir $user->tipo = 'admin' (grava em tipo_usuario).
+     */
+    public function setTipoAttribute($value): void
+    {
+        // Aceita enum ou string
+        if ($value instanceof \BackedEnum) {
+            $value = $value->value;
+        }
+        $this->attributes['tipo_usuario'] = $value;
     }
 
     // -----------------------
@@ -92,6 +117,11 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return in_array($this->tipoUsuarioValue(), ['admin', 'master'], true);
+    }
+
+    public function isAdminLike(): bool
+    {
+        return $this->isAdmin();
     }
 
     public function isMaster(): bool
