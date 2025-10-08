@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class EventoDetalhe extends Model
+class Programacao extends Model
 {
     use HasFactory;
 
-    protected $table = 'eventos_detalhes';
+    protected $table = 'programacao';
 
     /**
      * A tabela usa UUID como chave primária.

@@ -49,7 +49,7 @@ class Palestrante extends Model
     public function atividades()
     {
         return $this->belongsToMany(
-            EventoDetalhe::class,
+            Programacao::class,
             'evento_detalhe_palestrante', // pivô para atividades (se existir)
             'palestrante_id',
             'evento_detalhe_id'
