@@ -10,16 +10,28 @@ return new class extends Migration
     {
         Schema::create('eventos', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('coordenador_id')->constrained('users');
+            // foreignUuid já cria a coluna do tipo certo e a chave estrangeira
+            $table->foreignUuid('coordenador_id')->nullable()->constrained('users'); // <-- CORRIGIDO: Adicionado nullable
+
             $table->string('nome');
-            $table->text('descricao');
-            $table->date('data_inicio_evento');
-            $table->date('data_fim_evento');
-            $table->date('data_inicio_inscricao');
-            $table->date('data_fim_inscricao');
+            $table->text('descricao')->nullable(); // <-- CORRIGIDO: Adicionado nullable
+
+            // Adicionando as colunas que estavam faltando na criação original
+            $table->string('tipo_classificacao')->nullable(); // <-- CORRIGIDO: Adicionado nullable
+            $table->string('area_tematica')->nullable();      // <-- CORRIGIDO: Adicionado nullable
+
+            // Corrigindo os tipos de dados de DATE para DATETIME para incluir a hora
+            $table->dateTime('data_inicio_evento');      // <-- CORRIGIDO: Tipo de dado
+            $table->dateTime('data_fim_evento');         // <-- CORRIGIDO: Tipo de dado
+            $table->dateTime('data_inicio_inscricao');   // <-- CORRIGIDO: Tipo de dado
+            $table->dateTime('data_fim_inscricao');      // <-- CORRIGIDO: Tipo de dado
+            
             $table->string('tipo_evento');
             $table->string('logomarca_url')->nullable();
-            $table->string('status');
+            
+            // Corrigindo o status para ter um valor padrão
+            $table->string('status')->default('rascunho'); // <-- CORRIGIDO: Adicionado default
+            
             $table->timestamps();
         });
     }

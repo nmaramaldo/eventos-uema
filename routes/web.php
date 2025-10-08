@@ -8,7 +8,7 @@ use App\Http\Controllers\FrontController;
 // Protegidos / app
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\EventoDetalheController;
+use App\Http\Controllers\ProgramacaoController;
 use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\PalestranteController;
@@ -64,12 +64,12 @@ Route::middleware('auth')->prefix('app')->group(function () {
 
     // Eventos e detalhes
     Route::resource('eventos', EventController::class);
-    Route::resource('eventos_detalhes', EventoDetalheController::class);
+    Route::resource('eventos_detalhes', ProgramacaoController::class);
 
     // Programação POR EVENTO (atalhos amigáveis)
-    Route::get('eventos/{evento}/programacao',        [EventoDetalheController::class, 'indexByEvent'])->name('eventos.programacao.index');
-    Route::get('eventos/{evento}/programacao/create', [EventoDetalheController::class, 'createForEvent'])->name('eventos.programacao.create');
-    Route::post('eventos/{evento}/programacao',       [EventoDetalheController::class, 'storeForEvent'])->name('eventos.programacao.store');
+    Route::get('eventos/{evento}/programacao',        [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
+    Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
+    Route::post('eventos/{evento}/programacao',       [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');
 
     // Inscrições, certificados e palestrantes
     Route::resource('inscricoes',   InscricaoController::class);

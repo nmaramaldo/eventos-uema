@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
-class EventoDetalhe extends Model
+class Programacao extends Model
 {
     use HasFactory;
 
-    protected $table = 'eventos_detalhes';
+    protected $table = 'programacao';
 
     // PK é UUID (string)
     public $incrementing = false;

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\EventoDetalhe;
+use App\Models\Programacao;
 use App\Models\Local;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
-class EventoDetalheController extends Controller
+class ProgramacaoController extends Controller
 {
     // ---------------------
     // LISTA por EVENTO
@@ -58,7 +58,7 @@ class EventoDetalheController extends Controller
         $data['evento_id']        = $evento->id;
         $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
 
-        EventoDetalhe::create($data);
+        Programacao::create($data);
 
         return redirect()
             ->route('eventos.programacao.index', $evento)
@@ -73,7 +73,7 @@ class EventoDetalheController extends Controller
     {
         $this->authorizeManage();
 
-        $itens = EventoDetalhe::with(['evento','local'])
+        $itens = Programacao::with(['evento','local'])
             ->orderByDesc('data_hora_inicio')
             ->paginate(20);
 
@@ -107,12 +107,12 @@ class EventoDetalheController extends Controller
 
         $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
 
-        EventoDetalhe::create($data);
+        Programacao::create($data);
 
         return redirect()->route('eventos_detalhes.index')->with('success','Atividade criada.');
     }
 
-    public function edit(EventoDetalhe $eventos_detalhe)
+    public function edit(Programacao $eventos_detalhe)
     {
         $this->authorizeManage();
 
@@ -123,7 +123,7 @@ class EventoDetalheController extends Controller
         ]);
     }
 
-    public function update(Request $r, EventoDetalhe $eventos_detalhe)
+    public function update(Request $r, Programacao $eventos_detalhe)
     {
         $this->authorizeManage();
 
@@ -145,7 +145,7 @@ class EventoDetalheController extends Controller
         return back()->with('success','Atividade atualizada.');
     }
 
-    public function destroy(EventoDetalhe $eventos_detalhe)
+    public function destroy(Programacao $eventos_detalhe)
     {
         $this->authorizeManage();
 

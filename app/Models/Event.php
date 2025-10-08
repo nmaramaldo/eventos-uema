@@ -65,9 +65,9 @@ class Event extends Model
      * Não usamos orderBy aqui para evitar erro em colunas que não existem.
      * A ordenação é aplicada nos controllers com ->ordenado().
      */
-    public function detalhes(): HasMany
+    public function programacao(): HasMany
     {
-        return $this->hasMany(EventoDetalhe::class, 'evento_id', 'id');
+        return $this->hasMany(Programacao::class, 'evento_id', 'id');
     }
 
     public function coordenador(): BelongsTo
