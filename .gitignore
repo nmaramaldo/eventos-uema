@@ -34,4 +34,4 @@ yarn-error.log*
 /storage/*.key
 /.idea
 /.vscode
-/.DS_Store
+/.DS_Storenode_modules/
