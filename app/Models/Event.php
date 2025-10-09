@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,7 @@ use Illuminate\Support\Str;
 
 class Event extends Model
 {
+    use Auditable;
     use HasFactory;
 
     protected $table = 'eventos';
@@ -56,7 +58,7 @@ class Event extends Model
 
     public function detalhes(): HasMany
     {
-        return $this->hasMany(EventoDetalhe::class, 'evento_id', 'id');
+        return $this->hasMany(Programacao::class, 'evento_id', 'id');
     }
 
     public function coordenador(): BelongsTo
