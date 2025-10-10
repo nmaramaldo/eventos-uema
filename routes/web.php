@@ -16,6 +16,8 @@ use App\Http\Controllers\NotificacaoController;
 
 // Admin
 use App\Http\Controllers\Admin\UserAdminController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\ProgramacaoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,14 +40,14 @@ Route::prefix('eventos')->name('front.eventos.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::get('/dashboard', fn () => view('dashboard'))
+Route::get('/dashboard', fn() => view('dashboard'))
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile',  [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile',[ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 /*
@@ -56,17 +58,17 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::middleware('auth')->prefix('app')->group(function () {
-    Route::get('/', fn () => redirect()->route('eventos.index'))->name('app.home');
+    Route::get('/', fn() => redirect()->route('eventos.index'))->name('app.home');
 
     // ---- Administrativo (admin/master) ----
     Route::middleware('can:manage-users')->group(function () {
         Route::resource('eventos', EventController::class);
-        Route::resource('eventos_detalhes', EventoDetalheController::class);
+        Route::resource('programacao', ProgramacaoController::class);
 
         // Programação POR EVENTO (atalhos amigáveis)
-        Route::get('eventos/{evento}/programacao',        [EventoDetalheController::class, 'indexByEvent'])->name('eventos.programacao.index');
-        Route::get('eventos/{evento}/programacao/create', [EventoDetalheController::class, 'createForEvent'])->name('eventos.programacao.create');
-        Route::post('eventos/{evento}/programacao',       [EventoDetalheController::class, 'storeForEvent'])->name('eventos.programacao.store');
+        Route::get('eventos/{evento}/programacao',        [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
+        Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
+        Route::post('eventos/{evento}/programacao',       [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');
 
         // Inscrições (admin pode listar/gerir se existir lógica no controller)
         Route::resource('certificados', CertificadoController::class);
@@ -82,6 +84,11 @@ Route::middleware('auth')->prefix('app')->group(function () {
         'notificacoes/{notificacao}/marcar-como-lida',
         [NotificacaoController::class, 'marcarComoLida']
     )->name('notificacoes.marcarComoLida');
+
+    // Logs de auditoria
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+    Route::get('/audit-logs/model/{modelType}/{modelId?}', [AuditLogController::class, 'forModel'])->name('audit-logs.model');
 });
 
 /*

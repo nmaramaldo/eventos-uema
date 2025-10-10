@@ -12,7 +12,6 @@ use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
-    use Auditable;
     use HasFactory, Notifiable;
 
     // IDs como UUID (string)

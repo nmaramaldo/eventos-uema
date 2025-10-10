@@ -73,6 +73,6 @@ class AuditLog extends Model
             $changes[] = "{$field}: '{$change['old']}' -> '{$change['new']}'";
         }
 
-        return implode(';' , $changes);
+        return implode('; ' , $changes);
     }
 }
