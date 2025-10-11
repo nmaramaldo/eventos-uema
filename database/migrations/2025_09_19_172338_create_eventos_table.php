@@ -18,7 +18,7 @@ return new class extends Migration
 
             // Adicionando as colunas que estavam faltando na criação original
             $table->string('tipo_classificacao')->nullable(); // <-- CORRIGIDO: Adicionado nullable
-            $table->string('area_tematica')->nullable();      // <-- CORRIGIDO: Adicionado nullable
+            $table->string('local_principal')->nullable();      // <-- CORRIGIDO: Adicionado nullable
 
             // Corrigindo os tipos de dados de DATE para DATETIME para incluir a hora
             $table->dateTime('data_inicio_evento');      // <-- CORRIGIDO: Tipo de dado
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->dateTime('data_fim_inscricao');      // <-- CORRIGIDO: Tipo de dado
             
             $table->string('tipo_evento');
-            $table->string('logomarca_url')->nullable();
+            $table->string('logomarca')->nullable();
             
             // Corrigindo o status para ter um valor padrão
             $table->string('status')->default('rascunho'); // <-- CORRIGIDO: Adicionado default

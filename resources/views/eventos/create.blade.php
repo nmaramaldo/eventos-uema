@@ -125,9 +125,9 @@
       {{-- Campo legado ainda usado em páginas públicas (mantemos) --}}
       <div class="form-group">
         <label>Local do evento (texto livre)</label>
-        <input type="text" name="area_tematica" value="{{ old('area_tematica') }}" class="form-control" placeholder="Ex.: Auditório Central - Campus São Luís">
+        <input type="text" name="local_principal" value="{{ old('local_principal') }}" class="form-control" placeholder="Ex.: Auditório Central - Campus São Luís">
         <small class="muted">Você pode preencher manualmente ou escolher abaixo no mapa para gravar o mesmo local em <em>Locais</em>.</small>
-        @error('area_tematica') <small class="text-danger">{{ $message }}</small> @enderror
+        @error('local_principal') <small class="text-danger">{{ $message }}</small> @enderror
       </div>
 
       {{-- Locais para o persistProgramacaoDoRequest (apenas 1) --}}
@@ -140,66 +140,6 @@
       </div>
     </div>
 
-    {{-- ===================== Palestrantes ===================== --}}
-    <div class="cardish">
-      <h3 style="margin-top:0">Palestrantes</h3>
-
-      <div class="row" style="gap:10px">
-        <div class="col-sm-3"><input id="palNome" class="form-control" placeholder="Nome"></div>
-        <div class="col-sm-3"><input id="palEmail" class="form-control" placeholder="E-mail (opcional)"></div>
-        <div class="col-sm-3"><input id="palCargo" class="form-control" placeholder="Cargo/Instituição (opcional)"></div>
-        <div class="col-sm-2"><button type="button" class="btn btn-default" id="btnAddPal">+ Adicionar</button></div>
-      </div>
-
-      <div style="margin-top:10px">
-        <table class="table table-bordered mini-table" id="tblPalestrantes">
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Cargo/Inst.</th><th style="width:70px">Ações</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    {{-- ===================== Programação ===================== --}}
-    <div class="cardish">
-      <h3 style="margin-top:0">Programação</h3>
-
-      <div class="row" style="gap:10px">
-        <div class="col-sm-3"><input id="atvTitulo" class="form-control" placeholder="Título"></div>
-        <div class="col-sm-2">
-          <select id="atvTipo" class="form-control">
-            <option value="">Tipo</option>
-            <option>Palestra</option>
-            <option>Minicurso</option>
-            <option>Mesa-redonda</option>
-            <option>Conferência</option>
-            <option>Apresentação de Trabalho</option>
-            <option>Oficina</option>
-            <option>Outro</option>
-          </select>
-        </div>
-        <div class="col-sm-2"><input id="atvInicio" type="datetime-local" class="form-control"></div>
-        <div class="col-sm-2"><input id="atvFim" type="datetime-local" class="form-control"></div>
-        <div class="col-sm-2">
-          <select id="atvLocal" class="form-control"><option value="">Local</option></select>
-        </div>
-        <div class="col-sm-1"><input id="atvCap" type="number" min="1" class="form-control" placeholder="Cap."></div>
-        <div class="col-sm-12" style="margin-top:8px">
-          <label class="checkbox-inline"><input type="checkbox" id="atvReqInscricao"> Requer inscrição</label>
-          <button type="button" class="btn btn-default pull-right" id="btnAddAtv">+ Adicionar atividade</button>
-        </div>
-      </div>
-
-      <div style="margin-top:10px">
-        <table class="table table-bordered mini-table" id="tblAtividades">
-          <thead>
-            <tr>
-              <th>Título</th><th>Tipo</th><th>Início</th><th>Fim</th><th>Local</th><th>Cap.</th><th>Inscr.</th><th style="width:70px">Ações</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
 
     {{-- ===================== Inscrições (com calendário + hora) ===================== --}}
     @php

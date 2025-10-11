@@ -8,104 +8,226 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        // Garante idempotência: se sobrou de tentativa anterior, apaga
         Schema::dropIfExists('eventos_new');
 
-        // 1) Cria a nova tabela com os campos que precisam ser nullable
+        // 1) Cria nova tabela com UUID
         Schema::create('eventos_new', function (Blueprint $table) {
-            $table->string('id')->primary();                 // UUID em string
-            $table->string('coordenador_id')->nullable();    // pode ser nulo
+            $table->uuid('id')->primary();
+            $table->uuid('coordenador_id')->nullable();
             $table->string('nome');
-            $table->text('descricao')->nullable();           // <-- agora nullable
-            $table->string('tipo_evento');                   // presencial|online|...
-            $table->string('tipo_classificacao')->nullable();// <-- agora nullable
-            $table->string('area_tematica')->nullable();     // <-- agora nullable
+            $table->text('descricao')->nullable();
+            $table->string('tipo_evento');
+            $table->string('tipo_classificacao')->nullable();
+            $table->string('local_principal')->nullable();
             $table->dateTime('data_inicio_evento');
             $table->dateTime('data_fim_evento');
             $table->dateTime('data_inicio_inscricao');
             $table->dateTime('data_fim_inscricao');
-            $table->string('logomarca_url')->nullable();     // <-- agora nullable
+            $table->string('logomarca')->nullable();
             $table->string('status')->default('rascunho');
             $table->timestamps();
         });
 
-        // 2) Copia os dados da antiga para a nova (se a antiga existir)
+        Schema::disableForeignKeyConstraints();
+        
+        $this->dropForeignIfExists('inscricoes', 'inscricoes_evento_id_foreign');
+        $this->dropForeignIfExists('eventos_detalhes', 'eventos_detalhes_evento_id_foreign');
+        $this->dropForeignIfExists('evento_palestrante', 'evento_palestrante_evento_id_foreign');
+
+        // 3) Copia dados - abordagem mais simples
         if (Schema::hasTable('eventos')) {
-            DB::statement('
-                INSERT INTO eventos_new (
-                    id, coordenador_id, nome, descricao, tipo_evento,
-                    tipo_classificacao, area_tematica,
-                    data_inicio_evento, data_fim_evento,
-                    data_inicio_inscricao, data_fim_inscricao,
-                    logomarca_url, status, created_at, updated_at
-                )
-                SELECT
-                    id, coordenador_id, nome, descricao, tipo_evento,
-                    tipo_classificacao, area_tematica,
-                    data_inicio_evento, data_fim_evento,
-                    data_inicio_inscricao, data_fim_inscricao,
-                    logomarca_url, status, created_at, updated_at
-                FROM eventos
-            ');
+            // Verifica se a coluna id atual é string (varchar)
+            $columnType = DB::selectOne("
+                SELECT data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'eventos' AND column_name = 'id'
+            ");
+
+            if ($columnType->data_type === 'character varying') {
+                // Se é string, tenta converter para UUID
+                DB::statement('
+                    INSERT INTO eventos_new (
+                        id, coordenador_id, nome, descricao, tipo_evento,
+                        tipo_classificacao, local_principal,
+                        data_inicio_evento, data_fim_evento,
+                        data_inicio_inscricao, data_fim_inscricao,
+                        logomarca, status, created_at, updated_at
+                    )
+                    SELECT
+                        CASE 
+                            WHEN id ~ ? THEN id::uuid
+                            ELSE gen_random_uuid()
+                        END,
+                        CASE 
+                            WHEN coordenador_id IS NOT NULL AND coordenador_id ~ ? THEN coordenador_id::uuid
+                            ELSE NULL 
+                        END,
+                        nome, descricao, tipo_evento,
+                        tipo_classificacao, local_principal,
+                        data_inicio_evento, data_fim_evento,
+                        data_inicio_inscricao, data_fim_inscricao,
+                        logomarca, status, created_at, updated_at
+                    FROM eventos
+                ', [
+                    '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$',
+                    '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+                ]);
+            } else {
+                // Se já é UUID, copia diretamente
+                DB::statement('
+                    INSERT INTO eventos_new (
+                        id, coordenador_id, nome, descricao, tipo_evento,
+                        tipo_classificacao, local_principal,
+                        data_inicio_evento, data_fim_evento,
+                        data_inicio_inscricao, data_fim_inscricao,
+                        logomarca, status, created_at, updated_at
+                    )
+                    SELECT
+                        id,
+                        coordenador_id,
+                        nome, descricao, tipo_evento,
+                        tipo_classificacao, local_principal,
+                        data_inicio_evento, data_fim_evento,
+                        data_inicio_inscricao, data_fim_inscricao,
+                        logomarca, status, created_at, updated_at
+                    FROM eventos
+                ');
+            }
         }
 
-        // 3) Troca as tabelas de forma segura (compatível com SQLite)
-        Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists('eventos');              // nada de CASCADE cru aqui
+        Schema::dropIfExists('eventos');
         Schema::rename('eventos_new', 'eventos');
+
+        // Converte colunas dependentes para UUID
+        $this->convertColumnToUUID('inscricoes', 'evento_id');
+        $this->convertColumnToUUID('eventos_detalhes', 'evento_id');
+        $this->convertColumnToUUID('evento_palestrante', 'evento_id');
+
+        // Recria as FKs
+        Schema::table('inscricoes', function (Blueprint $table) {
+            $table->foreign('evento_id')->references('id')->on('eventos');
+        });
+        
+        Schema::table('eventos_detalhes', function (Blueprint $table) {
+            $table->foreign('evento_id')->references('id')->on('eventos');
+        });
+        
+        Schema::table('evento_palestrante', function (Blueprint $table) {
+            $table->foreign('evento_id')->references('id')->on('eventos');
+        });
+        
         Schema::enableForeignKeyConstraints();
     }
 
     public function down(): void
     {
-        // Idempotência no down
         Schema::dropIfExists('eventos_old');
 
-        // Recria versão antiga com NOT NULL onde era obrigatório
+        // Cria tabela antiga com string
         Schema::create('eventos_old', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->string('coordenador_id')->nullable();
             $table->string('nome');
-            $table->text('descricao');                        // NOT NULL novamente
+            $table->text('descricao');
             $table->string('tipo_evento');
-            $table->string('tipo_classificacao');             // NOT NULL novamente
-            $table->string('area_tematica');                  // NOT NULL novamente
+            $table->string('tipo_classificacao');
+            $table->string('local_principal');
             $table->dateTime('data_inicio_evento');
             $table->dateTime('data_fim_evento');
             $table->dateTime('data_inicio_inscricao');
             $table->dateTime('data_fim_inscricao');
-            $table->string('logomarca_url');                  // NOT NULL novamente
+            $table->string('logomarca');
             $table->string('status')->default('rascunho');
             $table->timestamps();
         });
 
+        Schema::disableForeignKeyConstraints();
+        
+        $this->dropForeignIfExists('inscricoes', 'inscricoes_evento_id_foreign');
+        $this->dropForeignIfExists('eventos_detalhes', 'eventos_detalhes_evento_id_foreign');
+        $this->dropForeignIfExists('evento_palestrante', 'evento_palestrante_evento_id_foreign');
+
+        // Converte UUIDs de volta para string
+        $this->convertColumnToString('inscricoes', 'evento_id');
+        $this->convertColumnToString('eventos_detalhes', 'evento_id');
+        $this->convertColumnToString('evento_palestrante', 'evento_id');
+
+        // Copia dados convertendo UUID para string
         if (Schema::hasTable('eventos')) {
-            // COALESCE para evitar violar NOT NULL ao reverter
-            DB::statement("
+            DB::statement('
                 INSERT INTO eventos_old (
                     id, coordenador_id, nome, descricao, tipo_evento,
-                    tipo_classificacao, area_tematica,
+                    tipo_classificacao, local_principal,
                     data_inicio_evento, data_fim_evento,
                     data_inicio_inscricao, data_fim_inscricao,
-                    logomarca_url, status, created_at, updated_at
+                    logomarca, status, created_at, updated_at
                 )
                 SELECT
-                    id, coordenador_id, nome,
-                    COALESCE(descricao, ''),
+                    id::text,
+                    coordenador_id::text,
+                    nome,
+                    COALESCE(descricao, \'\'),
                     tipo_evento,
-                    COALESCE(tipo_classificacao, ''),
-                    COALESCE(area_tematica, ''),
+                    COALESCE(tipo_classificacao, \'\'),
+                    COALESCE(local_principal, \'\'),
                     data_inicio_evento, data_fim_evento,
                     data_inicio_inscricao, data_fim_inscricao,
-                    COALESCE(logomarca_url, ''),
+                    COALESCE(logomarca, \'\'),
                     status, created_at, updated_at
                 FROM eventos
-            ");
+            ');
         }
 
-        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('eventos');
         Schema::rename('eventos_old', 'eventos');
+
+        // Recria FKs
+        Schema::table('inscricoes', function (Blueprint $table) {
+            $table->foreign('evento_id')->references('id')->on('eventos');
+        });
+        
+        Schema::table('eventos_detalhes', function (Blueprint $table) {
+            $table->foreign('evento_id')->references('id')->on('eventos');
+        });
+        
+        Schema::table('evento_palestrante', function (Blueprint $table) {
+            $table->foreign('evento_id')->references('id')->on('eventos');
+        });
+        
         Schema::enableForeignKeyConstraints();
+    }
+
+    private function dropForeignIfExists(string $table, string $foreignKey): void
+    {
+        try {
+            Schema::table($table, function (Blueprint $table) use ($foreignKey) {
+                $table->dropForeign($foreignKey);
+            });
+        } catch (Exception $e) {
+            // Ignora se não existir
+        }
+    }
+
+    private function convertColumnToUUID(string $table, string $column): void
+    {
+        try {
+            DB::statement("ALTER TABLE {$table} ALTER COLUMN {$column} TYPE UUID USING {$column}::uuid");
+        } catch (Exception $e) {
+            // Se falhar, tenta uma abordagem alternativa
+            DB::statement("
+                ALTER TABLE {$table} 
+                ALTER COLUMN {$column} TYPE UUID 
+                USING CASE 
+                    WHEN {$column}::text ~ '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$' 
+                    THEN {$column}::uuid 
+                    ELSE gen_random_uuid() 
+                END
+            ");
+        }
+    }
+
+    private function convertColumnToString(string $table, string $column): void
+    {
+        DB::statement("ALTER TABLE {$table} ALTER COLUMN {$column} TYPE VARCHAR(255)");
     }
 };
