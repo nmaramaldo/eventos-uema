@@ -24,6 +24,7 @@ class StorePalestranteRequest extends FormRequest
         return [
             'nome' => 'required|string|max:255',
             'biografia' => 'nullable|string',
+            'email' => 'required|email|max:255',
             'foto_url' => 'nullable|string',
             'eventos' => 'nullable|array',
             'eventos.*' => 'exists:eventos,id'

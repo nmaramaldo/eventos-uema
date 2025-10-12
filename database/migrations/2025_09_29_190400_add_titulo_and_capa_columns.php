@@ -14,9 +14,9 @@ return new class extends Migration {
             }
         });
 
-        // eventos_detalhes: titulo (nome da atividade)
-        Schema::table('eventos_detalhes', function (Blueprint $table) {
-            if (!Schema::hasColumn('eventos_detalhes', 'titulo')) {
+        // programacao: titulo (nome da atividade)
+        Schema::table('programacao', function (Blueprint $table) {
+            if (!Schema::hasColumn('programacao', 'titulo')) {
                 $table->string('titulo')->nullable()->after('evento_id');
             }
         });
@@ -30,8 +30,8 @@ return new class extends Migration {
             }
         });
 
-        Schema::table('eventos_detalhes', function (Blueprint $table) {
-            if (Schema::hasColumn('eventos_detalhes', 'titulo')) {
+        Schema::table('programacao', function (Blueprint $table) {
+            if (Schema::hasColumn('programacao', 'titulo')) {
                 $table->dropColumn('titulo');
             }
         });

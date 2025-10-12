@@ -45,17 +45,17 @@ class ProgramacaoController extends Controller
         $this->authorizeManage();
 
         $data = $r->validate([
-            'titulo'            => ['required','string','max:255'],
-            'descricao'         => ['nullable','string'],
-            'data_hora_inicio'  => ['required','date'],
-            'data_hora_fim'     => ['required','date','after_or_equal:data_hora_inicio'],
-            'local_id'          => ['nullable','uuid','exists:locais,id'],
-            // Campos extras opcionais
-            'requer_inscricao'  => ['nullable','boolean'],
-            'vagas'             => ['nullable','integer','min:1'],
+            'titulo'            => ['required', 'string', 'max:255'],
+            'descricao'         => ['nullable', 'string'],
+            'data_hora_inicio'  => ['required', 'date'],
+            'data_hora_fim'     => ['required', 'date', 'after_or_equal:data_hora_inicio'],
+            'modalidade' => ['required', 'string', 'max:255'],
+            'capacidade'        => ['nullable', 'integer', 'min:1'],
+            'localidade'        => ['required', 'string', 'max:255'],
+            'requer_inscricao'  => ['nullable', 'boolean'],
         ]);
 
-        $data['evento_id']        = $evento->id;
+        $data['evento_id'] = $evento->id;
         $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
 
         Programacao::create($data);
@@ -73,7 +73,7 @@ class ProgramacaoController extends Controller
     {
         $this->authorizeManage();
 
-        $itens = Programacao::with(['evento','local'])
+        $itens = Programacao::with(['evento', 'local'])
             ->orderByDesc('data_hora_inicio')
             ->paginate(20);
 
@@ -95,28 +95,28 @@ class ProgramacaoController extends Controller
         $this->authorizeManage();
 
         $data = $r->validate([
-            'evento_id'         => ['required','uuid','exists:eventos,id'],
-            'titulo'            => ['required','string','max:255'],
-            'descricao'         => ['nullable','string'],
-            'data_hora_inicio'  => ['required','date'],
-            'data_hora_fim'     => ['required','date','after_or_equal:data_hora_inicio'],
-            'local_id'          => ['nullable','uuid','exists:locais,id'],
-            'requer_inscricao'  => ['nullable','boolean'],
-            'vagas'             => ['nullable','integer','min:1'],
+            'evento_id'         => ['required', 'uuid', 'exists:eventos,id'],
+            'titulo'            => ['required', 'string', 'max:255'],
+            'descricao'         => ['nullable', 'string'],
+            'data_hora_inicio'  => ['required', 'date'],
+            'data_hora_fim'     => ['required', 'date', 'after_or_equal:data_hora_inicio'],
+            'local_id'          => ['nullable', 'uuid', 'exists:locais,id'],
+            'requer_inscricao'  => ['nullable', 'boolean'],
+            'vagas'             => ['nullable', 'integer', 'min:1'],
         ]);
 
         $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
 
         Programacao::create($data);
 
-        return redirect()->route('eventos_detalhes.index')->with('success','Atividade criada.');
+        return redirect()->route('eventos_detalhes.index')->with('success', 'Atividade criada.');
     }
 
     public function edit(Programacao $eventos_detalhe)
     {
         $this->authorizeManage();
 
-        return view('eventos_detalhes.edit', [
+        return view('eventos.programacao.edit', [
             'item'    => $eventos_detalhe,
             'eventos' => Event::orderBy('nome')->get(),
             'locais'  => Local::orderBy('nome')->get(),
@@ -128,21 +128,21 @@ class ProgramacaoController extends Controller
         $this->authorizeManage();
 
         $data = $r->validate([
-            'evento_id'         => ['required','uuid','exists:eventos,id'],
-            'titulo'            => ['required','string','max:255'],
-            'descricao'         => ['nullable','string'],
-            'data_hora_inicio'  => ['required','date'],
-            'data_hora_fim'     => ['required','date','after_or_equal:data_hora_inicio'],
-            'local_id'          => ['nullable','uuid','exists:locais,id'],
-            'requer_inscricao'  => ['nullable','boolean'],
-            'vagas'             => ['nullable','integer','min:1'],
+            'evento_id'         => ['required', 'uuid', 'exists:eventos,id'],
+            'titulo'            => ['required', 'string', 'max:255'],
+            'descricao'         => ['nullable', 'string'],
+            'data_hora_inicio'  => ['required', 'date'],
+            'data_hora_fim'     => ['required', 'date', 'after_or_equal:data_hora_inicio'],
+            'local_id'          => ['nullable', 'uuid', 'exists:locais,id'],
+            'requer_inscricao'  => ['nullable', 'boolean'],
+            'vagas'             => ['nullable', 'integer', 'min:1'],
         ]);
 
         $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
 
         $eventos_detalhe->update($data);
 
-        return back()->with('success','Atividade atualizada.');
+        return back()->with('success', 'Atividade atualizada.');
     }
 
     public function destroy(Programacao $eventos_detalhe)
@@ -151,7 +151,7 @@ class ProgramacaoController extends Controller
 
         $eventos_detalhe->delete();
 
-        return back()->with('success','Atividade removida.');
+        return back()->with('success', 'Atividade removida.');
     }
 
     // ---------------------

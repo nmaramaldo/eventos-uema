@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('palestrantes', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('nome');
+            $table->string('email')->unique();
             $table->text('biografia')->nullable();
             $table->text('foto_url')->nullable();
             $table->timestamps();

@@ -25,11 +25,11 @@ class Programacao extends Model
     protected $fillable = [
         'id',
         'evento_id',
+        'titulo',
         'descricao',
         'modalidade',
-        'data',
-        'hora_inicio',
-        'hora_fim',
+        'data_hora_inicio',
+        'data_hora_fim',
         'local_id',     // se existir no schema
         'localidade',   // quando salvar o nome/endereço em vez do id
         'capacidade',
@@ -37,10 +37,9 @@ class Programacao extends Model
     ];
 
     protected $casts = [
-        'data'             => 'date',
-        // manter horas como string evita problemas de driver/timezone em SQLite
-        'hora_inicio'      => 'string',
-        'hora_fim'         => 'string',
+        
+        'data_hora_inicio'      => 'datetime',
+        'data_hora_fim'         => 'datetime',
         'capacidade'       => 'integer',
         'requer_inscricao' => 'boolean',
     ];

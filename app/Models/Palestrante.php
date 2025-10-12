@@ -18,6 +18,7 @@ class Palestrante extends Model
 
     protected $fillable = [
         'nome',
+        'email',
         'biografia',
         'foto_url',
         // se futuramente adicionar colunas, inclua-as aqui

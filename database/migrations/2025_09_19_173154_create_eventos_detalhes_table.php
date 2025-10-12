@@ -8,22 +8,42 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('eventos_detalhes', function (Blueprint $table) {
-            $table->uuid('id')->primary(); // Alterado para UUID
+        // remover tabela antiga se existir
+        Schema::dropIfExists('eventos_detalhes');
+        
+        // criar nova tabela com estrutura melhorada
+        Schema::create('programacao', function (Blueprint $table) {
+            $table->uuid('id')->primary();
             $table->foreignUuid('evento_id')->constrained('eventos')->onDelete('cascade');
-            $table->text('descricao');
-            $table->date('data');
-            $table->time('hora_inicio');
-            $table->time('hora_fim');
-            $table->string('modalidade');
-            $table->integer('capacidade');
+            
+            // campos principais
+            $table->string('titulo');
+            $table->text('descricao')->nullable();
+            
+            // datetimes 
+            $table->datetime('data_hora_inicio');
+            $table->datetime('data_hora_fim');
+            
+            // informações da atividade
+            $table->string('modalidade')->default('Presencial');
+            $table->integer('capacidade')->nullable();
             $table->string('localidade');
+            
+            // controle de inscrições
+            $table->boolean('requer_inscricao')->default(false);
+            $table->integer('vagas_preenchidas')->default(0);
+            
+            // auditoria
             $table->timestamps();
+            
+            // indexes para performance
+            $table->index(['evento_id', 'data_hora_inicio']);
+            $table->index('data_hora_inicio');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('eventos_detalhes');
+        Schema::dropIfExists('programacao');
     }
 };

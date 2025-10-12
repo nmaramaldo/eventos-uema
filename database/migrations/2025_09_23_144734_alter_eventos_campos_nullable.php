@@ -31,7 +31,7 @@ return new class extends Migration {
         Schema::disableForeignKeyConstraints();
         
         $this->dropForeignIfExists('inscricoes', 'inscricoes_evento_id_foreign');
-        $this->dropForeignIfExists('eventos_detalhes', 'eventos_detalhes_evento_id_foreign');
+        $this->dropForeignIfExists('programacao', 'programacao_evento_id_foreign');
         $this->dropForeignIfExists('evento_palestrante', 'evento_palestrante_evento_id_foreign');
 
         // 3) Copia dados - abordagem mais simples
@@ -100,7 +100,7 @@ return new class extends Migration {
 
         // Converte colunas dependentes para UUID
         $this->convertColumnToUUID('inscricoes', 'evento_id');
-        $this->convertColumnToUUID('eventos_detalhes', 'evento_id');
+        $this->convertColumnToUUID('programacao', 'evento_id');
         $this->convertColumnToUUID('evento_palestrante', 'evento_id');
 
         // Recria as FKs
@@ -108,7 +108,7 @@ return new class extends Migration {
             $table->foreign('evento_id')->references('id')->on('eventos');
         });
         
-        Schema::table('eventos_detalhes', function (Blueprint $table) {
+        Schema::table('programacao', function (Blueprint $table) {
             $table->foreign('evento_id')->references('id')->on('eventos');
         });
         
@@ -144,12 +144,12 @@ return new class extends Migration {
         Schema::disableForeignKeyConstraints();
         
         $this->dropForeignIfExists('inscricoes', 'inscricoes_evento_id_foreign');
-        $this->dropForeignIfExists('eventos_detalhes', 'eventos_detalhes_evento_id_foreign');
+        $this->dropForeignIfExists('programacao', 'programacao_evento_id_foreign');
         $this->dropForeignIfExists('evento_palestrante', 'evento_palestrante_evento_id_foreign');
 
         // Converte UUIDs de volta para string
         $this->convertColumnToString('inscricoes', 'evento_id');
-        $this->convertColumnToString('eventos_detalhes', 'evento_id');
+        $this->convertColumnToString('programacao', 'evento_id');
         $this->convertColumnToString('evento_palestrante', 'evento_id');
 
         // Copia dados convertendo UUID para string
@@ -186,7 +186,7 @@ return new class extends Migration {
             $table->foreign('evento_id')->references('id')->on('eventos');
         });
         
-        Schema::table('eventos_detalhes', function (Blueprint $table) {
+        Schema::table('programacao', function (Blueprint $table) {
             $table->foreign('evento_id')->references('id')->on('eventos');
         });
         

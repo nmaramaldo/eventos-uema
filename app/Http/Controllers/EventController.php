@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
-use App\Models\EventoDetalhe;
 use App\Models\Local;
 use App\Models\Palestrante;
+use App\Models\Programacao;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -30,7 +30,7 @@ class EventController extends Controller
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $w->where('nome', 'like', "%{$q}%")
-                  ->orWhere('descricao', 'like', "%{$q}%");
+                    ->orWhere('descricao', 'like', "%{$q}%");
             });
         }
 
@@ -81,8 +81,7 @@ class EventController extends Controller
         });
 
         return redirect()
-            ->route('eventos.programacao.create', $evento)
-            ->with('success', 'Evento criado com sucesso!');
+            ->route('eventos.programacao.create', $evento);
     }
 
     public function show(Event $evento)
@@ -93,11 +92,11 @@ class EventController extends Controller
             'coordenador',
             'inscricoes',
             'palestrantes',
-            'detalhes' => fn ($q) => $q->ordenado(),
+            'detalhes' => fn($q) => $q->ordenado(),
         ]);
 
         $relacionados = Event::where('id', '!=', $evento->id)
-            ->when($evento->area_tematica, fn ($q) => $q->where('area_tematica', $evento->area_tematica))
+            ->when($evento->area_tematica, fn($q) => $q->where('area_tematica', $evento->area_tematica))
             ->whereIn('status', ['ativo', 'publicado'])
             ->orderBy('data_inicio_evento', 'asc')
             ->take(6)
@@ -231,7 +230,7 @@ class EventController extends Controller
             $evento->palestrantes()->syncWithoutDetaching($palestrantesIds);
         }
 
-        /* -------- ATIVIDADES (EventoDetalhe) -------- */
+        /* -------- ATIVIDADES (Programacao) -------- */
         $colsDetalhe = Schema::getColumnListing('eventos_detalhes');
 
         foreach ((array) $request->input('atividades', []) as $a) {
@@ -270,7 +269,7 @@ class EventController extends Controller
                 $attrs['requer_inscricao'] = (bool)($a['requer_inscricao'] ?? false);
             }
 
-            EventoDetalhe::create($attrs);
+            Programacao::create($attrs);
         }
     }
 

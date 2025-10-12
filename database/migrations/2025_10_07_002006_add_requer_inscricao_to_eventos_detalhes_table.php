@@ -8,9 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('eventos_detalhes', function (Blueprint $table) {
+        Schema::table('programacao', function (Blueprint $table) {
             // adiciona a coluna apenas se ela ainda não existir
-            if (! Schema::hasColumn('eventos_detalhes', 'requer_inscricao')) {
+            if (! Schema::hasColumn('programacao', 'requer_inscricao')) {
                 // em SQLite, boolean vira INTEGER (0/1) — tudo bem
                 $table->boolean('requer_inscricao')->default(false)->after('capacidade');
             }
@@ -19,8 +19,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('eventos_detalhes', function (Blueprint $table) {
-            if (Schema::hasColumn('eventos_detalhes', 'requer_inscricao')) {
+        Schema::table('programacao', function (Blueprint $table) {
+            if (Schema::hasColumn('programacao', 'requer_inscricao')) {
                 $table->dropColumn('requer_inscricao');
             }
         });
