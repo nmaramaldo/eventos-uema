@@ -36,8 +36,8 @@
               <td>{{ $i->local?->nome ?? '—' }}</td>
               <td class="text-right">
                 {{-- Se quiser editar via CRUD genérico: --}}
-                <a class="btn btn-xs btn-default" href="{{ route('eventos_detalhes.edit', $i) }}">Editar</a>
-                <form action="{{ route('eventos_detalhes.destroy', $i) }}" method="post" style="display:inline">
+                <a class="btn btn-xs btn-default" href="{{ route('programacao.edit', $i) }}">Editar</a>
+                <form action="{{ route('programacao.destroy', $i) }}" method="post" style="display:inline">
                   @csrf @method('DELETE')
                   <button class="btn btn-xs btn-danger" onclick="return confirm('Remover?')">Excluir</button>
                 </form>

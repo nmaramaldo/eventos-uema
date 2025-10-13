@@ -27,7 +27,7 @@ return new class extends Migration
             $table->dateTime('data_fim_inscricao');      // <-- CORRIGIDO: Tipo de dado
             
             $table->string('tipo_evento');
-            $table->string('logomarca')->nullable();
+            $table->string('logomarca_path')->nullable();
             
             // Corrigindo o status para ter um valor padrão
             $table->string('status')->default('rascunho'); // <-- CORRIGIDO: Adicionado default

@@ -66,7 +66,7 @@ class ProgramacaoController extends Controller
     }
 
     // ---------------------
-    // CRUD genérico (se quiser usar)
+    // CRUD genérico 
     // ---------------------
 
     public function index()

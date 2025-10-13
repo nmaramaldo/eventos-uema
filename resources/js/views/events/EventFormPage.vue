@@ -1,69 +1,56 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">
-        {{ isEditing ? 'Editar Evento' : 'Novo Evento' }}
-      </h1>
+  <form @submit.prevent="submitForm">
+    <div class="tabs mb-4">
+      <button
+        v-for="(tab, index) in tabs"
+        :key="tab"
+        @click="activeTab = index"
+        :class="['px-4 py-2', activeTab === index ? 'bg-blue-600 text-white' : 'bg-gray-100']"
+      >
+        {{ tab }}
+      </button>
     </div>
 
-    <div class="bg-white rounded-xl shadow-card p-6">
-      <EventForm
-        :initial-data="initialData"
-        :loading="loading"
-        :errors="errors"
-        @submit="onSubmit"
-        @cancel="onCancel"
-      />
+    <component
+      :is="tabComponents[activeTab]"
+      v-model="localEvent"
+    />
+
+    <div class="flex justify-end mt-6">
+      <button
+        type="submit"
+        class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+      >
+        {{ isEditing ? 'Salvar Alterações' : 'Criar Evento' }}
+      </button>
     </div>
-  </div>
+  </form>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import EventForm from '@/views/events/EventForm.vue'
+import { ref, watch, computed } from 'vue'
+import EventBasicInfo from './EventBasicInfo.vue'
+import EventProgram from './EventProgram.vue'
+import EventSpeakers from './EventSpeakers.vue'
 
-const router = useRouter()
-const route = useRoute()
+const props = defineProps({
+  initialEvent: Object,
+  isEditing: Boolean
+})
+const emit = defineEmits(['submit'])
 
-// Edição se tiver ID na rota (ex: /eventos/:id/editar)
-const isEditing = computed(() => Boolean(route.params?.id))
+const localEvent = ref({ ...props.initialEvent })
+const activeTab = ref(0)
 
-// Mock inicial (se edição, poderia vir de API)
-const initialData = reactive({})
+const tabs = ['Informações Básicas', 'Programação', 'Palestrantes']
+const tabComponents = [EventBasicInfo, EventProgram, EventSpeakers]
 
-// Estado
-const loading = ref(false)
-const errors = reactive({})
+watch(() => props.initialEvent, (newVal) => {
+  localEvent.value = { ...newVal }
+})
 
-// Handlers
-async function onSubmit(payload) {
-  try {
-    loading.value = true
-    resetErrors()
-
-    // Aqui seria a chamada da API (create/update)
-    await fakeRequest(1000)
-
-    router.push({ name: 'events.list' })
-  } catch (e) {
-    console.error(e)
-    // se API retornar erros: errors.title = 'mensagem'
-  } finally {
-    loading.value = false
-  }
-}
-
-function onCancel() {
-  router.push({ name: 'events.list' })
-}
-
-function resetErrors() {
-  Object.keys(errors).forEach(k => delete errors[k])
-}
-
-// Mock request
-function fakeRequest(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+const submitForm = () => {
+  emit('submit', localEvent.value)
 }
 </script>
+

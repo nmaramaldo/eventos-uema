@@ -97,4 +97,17 @@ class PalestranteController extends Controller
 
         return redirect()->route('palestrantes.index')->with('success', 'Palestrante excluído com sucesso!');
     }
+
+    public function indexByEvent(Event $evento)
+{
+    $this->authorize('update', $evento); // Usa a permissão do evento
+
+    // Carrega os palestrantes já associados
+    $palestrantesDoEvento = $evento->palestrantes()->orderBy('nome')->get();
+
+    // Busca todos os outros palestrantes para um dropdown de "adicionar"
+    $palestrantesDisponiveis = Palestrante::orderBy('nome')->get();
+
+    return view('palestrantes.index-by-event', compact('evento', 'palestrantesDoEvento', 'palestrantesDisponiveis'));
+}
 }

@@ -20,7 +20,7 @@ class Palestrante extends Model
         'nome',
         'email',
         'biografia',
-        'foto_url',
+        'foto',
         // se futuramente adicionar colunas, inclua-as aqui
         // ex.: 'email', 'cargo', 'mini_bio'
     ];

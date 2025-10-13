@@ -8,37 +8,31 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // remover tabela antiga se existir
-        Schema::dropIfExists('eventos_detalhes');
-        
-        // criar nova tabela com estrutura melhorada
         Schema::create('programacao', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('evento_id')->constrained('eventos')->onDelete('cascade');
+            $table->foreignUuid('evento_id')->constrained('eventos')->cascadeOnDelete();
             
-            // campos principais
+            // CAMPOS PRINCIPAIS 
             $table->string('titulo');
             $table->text('descricao')->nullable();
             
-            // datetimes 
+            // DATETIMES 
             $table->datetime('data_hora_inicio');
             $table->datetime('data_hora_fim');
             
-            // informações da atividade
+            // INFORMAÇÕES DA ATIVIDADE 
             $table->string('modalidade')->default('Presencial');
             $table->integer('capacidade')->nullable();
-            $table->string('localidade');
-            
-            // controle de inscrições
+            $table->string('localidade')->nullable(); // Permitindo nulo para atividades online
+
+            // CONTROLE DE INSCRIÇÕES
             $table->boolean('requer_inscricao')->default(false);
-            $table->integer('vagas_preenchidas')->default(0);
-            
-            // auditoria
+
+            // AUDITORIA
             $table->timestamps();
             
-            // indexes para performance
+            // INDEXES PARA PERFORMANCE
             $table->index(['evento_id', 'data_hora_inicio']);
-            $table->index('data_hora_inicio');
         });
     }
 
