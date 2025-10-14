@@ -1,44 +1,95 @@
-@extends('layouts.new-event')
+@extends('layouts.app')
 @section('title', 'Início')
 
 @section('content')
-  {{-- HERO / INTRO --}}
-  <section id="intro" class="text-center" style="padding:120px 0; background:#222; color:#fff;">
+  {{-- HERO --}}
+  <section class="hero text-center">
     <div class="container">
-      <h1 style="margin-bottom:10px;">Bem-vindo(a) ao Portal de Eventos</h1>
-      <p>Descubra eventos, confira a programação, conheça os palestrantes e faça sua inscrição.</p>
-      <a href="{{ route('front.eventos.index') }}" class="btn btn-primary" style="margin-top:20px;">Explorar eventos</a>
+      <h1 class="mb-3">Descubra, participe, conecte-se.</h1>
+      <p class="lead mb-4">Encontre os eventos mais relevantes da sua área.</p>
+      <a href="{{ route('front.eventos.index') }}" class="btn btn-light btn-lg">
+        <i class="bi bi-search me-2"></i>Explorar eventos
+      </a>
     </div>
   </section>
 
-  {{-- PALESTRANTES (placeholder; depois ligamos ao banco) --}}
-  <section id="palestrantes" class="container" style="padding:60px 0;">
-    <header class="text-center">
-      <h2 class="section-title">Palestrantes</h2>
-      <p>Conheça alguns dos profissionais confirmados.</p>
-    </header>
-    <div class="row">
-      <div class="col-md-3"><div class="speaker-card text-center"><i class="fa fa-user fa-4x"></i><h4>Nome</h4></div></div>
-      <div class="col-md-3"><div class="speaker-card text-center"><i class="fa fa-user fa-4x"></i><h4>Nome</h4></div></div>
-      <div class="col-md-3"><div class="speaker-card text-center"><i class="fa fa-user fa-4x"></i><h4>Nome</h4></div></div>
-      <div class="col-md-3"><div class="speaker-card text-center"><i class="fa fa-user fa-4x"></i><h4>Nome</h4></div></div>
+  {{-- DESTAQUES --}}
+  @if($destaques->count())
+  <section class="container py-5">
+    <h2 class="h4 mb-3">Em destaque</h2>
+    <div id="carouselDestaques" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        @foreach($destaques as $i => $e)
+          <div class="carousel-item {{ $i === 0 ? 'active' : '' }}">
+            <div class="card border-0 shadow-sm">
+              @if($e->logomarca_path)
+                <img src="{{ Storage::url($e->logomarca_path) }}" class="card-img-top" alt="{{ $e->nome }}">
+              @endif
+              <div class="card-body">
+                <h5 class="card-title mb-1">{{ $e->nome }}</h5>
+                <div class="text-muted small mb-2">{{ $e->periodo_evento }}</div>
+                <a href="{{ route('front.eventos.show', $e) }}" class="btn btn-primary btn-sm">Ver detalhes</a>
+              </div>
+            </div>
+          </div>
+        @endforeach
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselDestaques" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselDestaques" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+    </div>
+  </section>
+  @endif
+
+  {{-- ÁREAS --}}
+  <section class="container pb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h4 mb-0">Eventos por área</h2>
+      <a href="{{ route('front.eventos.index') }}" class="small text-decoration-none">Ver mais</a>
+    </div>
+
+    <div class="row g-3">
+      @foreach($areas as $area)
+        <div class="col-6 col-md-4 col-lg-3">
+          <a href="{{ route('front.eventos.index', ['area_tematica' => $area]) }}" class="text-decoration-none">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body d-flex align-items-center">
+                <i class="bi bi-grid-3x3-gap me-2"></i>
+                <span class="fw-semibold">{{ $area }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      @endforeach
     </div>
   </section>
 
-  {{-- PROGRAMAÇÃO (placeholder) --}}
-  <section id="programacao" class="container" style="padding:60px 0;">
-    <header class="text-center">
-      <h2 class="section-title">Programação</h2>
-      <p>Agenda de atividades por dia e horário.</p>
-    </header>
-    <div class="program-item"><strong>09:00–10:00</strong> — Abertura oficial</div>
-    <div class="program-item"><strong>10:15–11:30</strong> — Mesa redonda</div>
-  </section>
+  {{-- RECENTES --}}
+  <section class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h4 mb-0">Vistos recentemente</h2>
+      <a href="{{ route('front.eventos.index') }}" class="small text-decoration-none">Ver mais</a>
+    </div>
 
-  {{-- INSCRIÇÃO (placeholder) --}}
-  <section id="inscricao" class="container text-center" style="padding:60px 0;">
-    <h2 class="section-title">Inscrição</h2>
-    <p>Faça sua inscrição nos eventos disponíveis.</p>
-    <a href="{{ route('front.eventos.index') }}" class="btn btn-success">Ver eventos disponíveis</a>
+    <div class="row g-3">
+      @forelse($recentes as $e)
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title mb-1">
+                <a href="{{ route('front.eventos.show', $e) }}" class="text-decoration-none">{{ $e->nome }}</a>
+              </h5>
+              <div class="text-muted small mb-2">{{ $e->periodo_evento }}</div>
+              <span class="badge bg-primary badge-status">{{ $e->status ?? '—' }}</span>
+            </div>
+          </div>
+        </div>
+      @empty
+        <p class="text-muted">Ainda não há eventos cadastrados.</p>
+      @endforelse
+    </div>
   </section>
 @endsection

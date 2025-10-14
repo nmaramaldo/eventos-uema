@@ -1,4 +1,4 @@
-@extends('layouts.new-event') {{-- troque para layouts.app se preferir --}}
+@extends('layouts.app') {{-- padroniza o menu --}}
 
 @section('title', 'Usuários')
 @section('content')
@@ -7,7 +7,7 @@
 
   <div class="row">
     <div class="col-md-8"><h2>Usuários</h2></div>
-    <div class="col-md-4 text-right">
+    <div class="col-md-4 text-end">
       <a href="{{ route('admin.usuarios.create') }}" class="btn btn-primary">Novo usuário</a>
     </div>
   </div>

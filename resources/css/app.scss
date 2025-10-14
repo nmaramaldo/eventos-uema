@@ -1,0 +1,34 @@
+/* resources/css/app.scss */
+
+/* Bootstrap base */
+@import "bootstrap/scss/bootstrap";
+
+/* Bootstrap Icons */
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+/* Tema (tons de azul) e ajustes leves */
+:root{
+  --bs-primary:#1e40af;             /* azul principal */
+  --bs-primary-rgb:30,64,175;
+  --bs-secondary:#0b2e7a;
+  --bs-info:#2563eb;
+  --bs-success:#16a34a;
+  --bs-danger:#dc2626;
+  --bs-warning:#f59e0b;
+  --bs-body-bg:#f8fafc;
+  --bs-body-color:#0f172a;
+}
+
+.navbar-brand{ font-weight:700; letter-spacing:.2px; }
+.navbar .nav-link{ font-weight:500; }
+.badge-status{ text-transform:uppercase; font-size:.7rem; letter-spacing:.3px; }
+.card.shadow-sm{ box-shadow:0 4px 14px rgba(15,23,42,.05)!important; }
+.btn-primary{ box-shadow:0 6px 18px rgba(30,64,175,.15); }
+
+/* Hero */
+.hero {
+  background: linear-gradient(180deg, rgba(30,64,175,.9), rgba(11,46,122,.9)),
+              url('/images/texture-blue.svg'), #1e40af;
+  color:#fff;
+  padding: 96px 0 72px;
+}

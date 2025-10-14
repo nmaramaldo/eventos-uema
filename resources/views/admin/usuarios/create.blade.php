@@ -1,4 +1,5 @@
-@extends('layouts.new-event')
+@extends('layouts.app')
+
 @section('title','Novo usuário')
 
 @section('content')
