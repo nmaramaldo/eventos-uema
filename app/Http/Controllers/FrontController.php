@@ -65,12 +65,12 @@ class FrontController extends Controller
 
     public function show(Event $evento)
     {
-        // Carrega relações e deixa a programação ordenada
+        // ❗ Relação correta é 'programacao'
         $evento->load([
             'coordenador',
             'inscricoes',
             'palestrantes',
-            'detalhes' => fn ($q) => $q->ordenado(),
+            'programacao' => fn ($q) => $q->ordenado(),
         ]);
 
         $relacionados = Event::where('id', '!=', $evento->id)

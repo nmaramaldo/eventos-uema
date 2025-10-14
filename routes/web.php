@@ -39,10 +39,10 @@ Route::prefix('eventos')->name('front.eventos.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-// Puxa as rotas de login, registro, logout, etc.
-require __DIR__.'/auth.php';
+// Auth scaffolding (login, register, logout, etc.)
+require __DIR__ . '/auth.php';
 
-Route::get('/dashboard', fn() => view('dashboard'))
+Route::get('/dashboard', fn () => view('dashboard'))
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
@@ -52,7 +52,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | CRUDS DA APLICAÇÃO (PROTEGIDOS)
@@ -60,43 +59,50 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::middleware('auth')->prefix('app')->group(function () {
-    Route::get('/', fn() => redirect()->route('eventos.index'))->name('app.home');
+    Route::get('/', fn () => redirect()->route('eventos.index'))->name('app.home');
 
     // ---- Administrativo (admin/master) ----
     Route::middleware('can:manage-users')->group(function () {
-        
-        // ✅ ATUALIZAÇÃO 1: Mantém as rotas de resource (index, edit, update, etc.) mas EXCLUI a rota de criação padrão.
+
+        // Mantém o resource mas sem create/store (usaremos o fluxo em 3 passos)
         Route::resource('eventos', EventController::class)->except(['create', 'store']);
 
-        // ✅ ATUALIZAÇÃO 2: Adiciona o novo fluxo de criação de evento em 3 passos.
+        // Fluxo de criação em 3 passos
         Route::prefix('eventos/criar')->name('eventos.create.')->group(function () {
-            // Passo 1: Informações Gerais e Inscrições
-            Route::get('/passo-1', [EventController::class, 'createStep1'])->name('step1');
+            // Passo 1
+            Route::get ('/passo-1', [EventController::class, 'createStep1'])->name('step1');
             Route::post('/passo-1', [EventController::class, 'storeStep1'])->name('store.step1');
-            
-            // Passo 2: Programação
-            Route::get('/passo-2', [EventController::class, 'createStep2'])->name('step2');
+
+            // Passo 2
+            Route::get ('/passo-2', [EventController::class, 'createStep2'])->name('step2');
             Route::post('/passo-2', [EventController::class, 'storeStep2'])->name('store.step2');
-            
-            // Passo 3: Palestrantes e Finalização
-            Route::get('/passo-3', [EventController::class, 'createStep3'])->name('step3');
+
+            // Passo 3
+            Route::get ('/passo-3', [EventController::class, 'createStep3'])->name('step3');
             Route::post('/passo-3', [EventController::class, 'storeStep3'])->name('store.step3');
         });
-        
-        // O RESTANTE DAS SUAS ROTAS CONTINUA IGUAL
+
+        // Programação (geral e por evento)
         Route::resource('programacao', ProgramacaoController::class);
-        Route::get('eventos/{evento}/programacao',       [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
-        Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
-        Route::post('eventos/{evento}/programacao',      [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');
+        Route::get ('eventos/{evento}/programacao',        [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
+        Route::get ('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
+        Route::post('eventos/{evento}/programacao',        [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');
+
+        // Palestrantes (visão por evento) + recursos
         Route::get('eventos/{evento}/palestrantes', [PalestranteController::class, 'indexByEvent'])->name('eventos.palestrantes.index');
-        Route::resource('certificados', CertificadoController::class);
         Route::resource('palestrantes', PalestranteController::class);
+
+        // Certificados
+        Route::resource('certificados', CertificadoController::class);
     });
 
     // ---- Área do participante/logado ----
     Route::resource('inscricoes',   InscricaoController::class);
     Route::resource('notificacoes', NotificacaoController::class);
-    Route::patch('notificacoes/{notificacao}/marcar-como-lida', [NotificacaoController::class, 'marcarComoLida'])->name('notificacoes.marcarComoLida');
+    Route::patch(
+        'notificacoes/{notificacao}/marcar-como-lida',
+        [NotificacaoController::class, 'marcarComoLida']
+    )->name('notificacoes.marcarComoLida');
 
     // Logs de auditoria
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
@@ -119,5 +125,3 @@ Route::middleware(['auth', 'can:manage-users'])
         Route::patch('usuarios/{user}/desativar', [UserAdminController::class, 'desativar'])->name('usuarios.desativar');
         Route::patch('usuarios/{user}/tipo',      [UserAdminController::class, 'alterarTipo'])->name('usuarios.tipo');
     });
-
-require __DIR__ . '/auth.php';

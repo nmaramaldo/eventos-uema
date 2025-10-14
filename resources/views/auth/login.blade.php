@@ -1,60 +1,59 @@
-@extends('layouts.auth')
+@extends('layouts.guest')
 @section('title', 'Acesse sua conta')
 
 @section('content')
-  <div class="w-full max-w-md">
-    <div class="bg-white rounded-2xl shadow p-8">
-      <div class="flex justify-center mb-6">
-        <img src="{{ asset('new-event/images/uema-logo.png') }}" class="h-12" alt="UEMA">
-      </div>
-      <h2 class="text-center text-2xl font-semibold">Acesse sua conta</h2>
-
-      @if (session('status'))
-        <div class="mt-4 rounded-lg bg-green-50 text-green-700 px-3 py-2 text-sm">
-          {{ session('status') }}
-        </div>
-      @endif
-
-      <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-4">
-        @csrf
-        <div>
-          <label class="block text-sm font-medium">E-mail</label>
-          <input name="email" type="email" value="{{ old('email') }}" required autofocus
-                 class="mt-1 block w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-600">
-          @error('email') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-        </div>
-
-        <div>
-          <div class="flex items-center justify-between">
-            <label class="block text-sm font-medium">Senha</label>
-            @if (Route::has('password.request'))
-              <a class="text-sm text-blue-600 hover:underline" href="{{ route('password.request') }}">
-                Esqueceu a senha?
-              </a>
-            @endif
-          </div>
-          <input name="password" type="password" required
-                 class="mt-1 block w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-600">
-          @error('password') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-        </div>
-
-        <label class="inline-flex items-center">
-          <input type="checkbox" name="remember" class="rounded border-gray-300">
-          <span class="ml-2 text-sm">Lembrar-me</span>
-        </label>
-
-        <button type="submit"
-                class="w-full inline-flex justify-center rounded-lg bg-blue-600 text-white py-2.5 font-medium hover:bg-blue-700">
-          Entrar
-        </button>
-      </form>
-
-      @if (Route::has('register'))
-        <p class="text-center text-sm mt-6">
-          Ainda não tem conta?
-          <a href="{{ route('register') }}" class="text-blue-600 hover:underline">Crie uma agora</a>
-        </p>
-      @endif
+    <div class="text-center mb-4">
+        <img src="{{ asset('new-event/images/uema-logo.png') }}" alt="UEMA" height="48" class="mb-2">
+        <h3 class="mb-1">Acesse sua conta</h3>
+        <div class="text-muted">Use seu e-mail institucional para acessar</div>
     </div>
-  </div>
+
+    @if (session('status'))
+        <div class="alert alert-success">{{ session('status') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <div class="fw-semibold mb-1">Ops! Verifique os campos abaixo:</div>
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('login') }}" novalidate>
+        @csrf
+
+        <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" name="email" value="{{ old('email') }}" required autofocus class="form-control">
+        </div>
+
+        <div class="mb-2">
+            <label class="form-label d-flex justify-content-between">
+                <span>Senha</span>
+                @if (Route::has('password.request'))
+                    <a href="{{ route('password.request') }}" class="small">Esqueceu a senha?</a>
+                @endif
+            </label>
+            <input type="password" name="password" required class="form-control">
+        </div>
+
+        <div class="form-check my-3">
+            <input class="form-check-input" type="checkbox" id="remember_me" name="remember">
+            <label class="form-check-label" for="remember_me">Lembrar-me</label>
+        </div>
+
+        <button class="btn btn-primary w-100">Entrar</button>
+    </form>
+
+    @if (Route::has('register'))
+        <div class="text-center mt-3">
+            <small class="text-muted">Ainda não tem conta?
+                <a href="{{ route('register') }}">Crie uma agora</a>
+            </small>
+        </div>
+    @endif
 @endsection

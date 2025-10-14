@@ -1,12 +1,16 @@
+{{-- resources/views/front/event-show.blade.php --}}
 @extends('layouts.app')
 @section('title', $evento->nome)
 
 @section('content')
 <div class="container py-5">
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
     <div class="row">
-        {{-- Coluna Principal (Esquerda) --}}
+        {{-- Coluna Principal --}}
         <div class="col-lg-8">
-            {{-- Título e Badges --}}
             <h2 class="mb-2">{{ $evento->nome }}</h2>
             <div class="mb-4">
                 <span class="badge bg-primary">{{ $evento->status ? ucfirst($evento->status) : '—' }}</span>
@@ -20,7 +24,6 @@
                 @endif
             </div>
 
-            {{-- Card de Informações Gerais --}}
             <div class="card mb-4 shadow-sm">
                 <div class="card-header"><strong>Informações Gerais</strong></div>
                 <div class="card-body">
@@ -36,56 +39,109 @@
                 </div>
             </div>
 
-            {{-- Card de Descrição --}}
             @if($evento->descricao)
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header"><strong>Descrição</strong></div>
                     <div class="card-body">{!! nl2br(e($evento->descricao)) !!}</div>
                 </div>
             @endif
-            
-            {{-- ✅ CORREÇÃO: Card de Programação --}}
+
+            {{-- Programação --}}
             <div class="card mb-4 shadow-sm">
                 <div class="card-header"><strong>Programação</strong></div>
                 <div class="card-body">
-                    {{-- Usando o nome correto do relacionamento: 'programacao' --}}
+                    @php use Carbon\Carbon; @endphp
+
                     @forelse($evento->programacao as $item)
+                        @php
+                            // Normaliza INÍCIO
+                            $iniOut = null;
+                            if (!empty($item->data_hora_inicio)) {
+                                $iniOut = Carbon::parse($item->data_hora_inicio);
+                            } elseif (!empty($item->inicio_em)) {
+                                $iniOut = Carbon::parse($item->inicio_em);
+                            } elseif (!empty($item->data) || !empty($item->hora_inicio)) {
+                                $iniOut = trim(
+                                    (!empty($item->data) ? Carbon::parse($item->data)->format('d/m') : '') .
+                                    (isset($item->hora_inicio) ? ' '.$item->hora_inicio : '')
+                                );
+                            }
+
+                            // Normaliza FIM
+                            $fimOut = null;
+                            if (!empty($item->data_hora_fim)) {
+                                $fimOut = Carbon::parse($item->data_hora_fim);
+                            } elseif (!empty($item->termino_em)) {
+                                $fimOut = Carbon::parse($item->termino_em);
+                            } elseif (!empty($item->data) || !empty($item->hora_fim)) {
+                                $fimOut = trim(
+                                    (!empty($item->data) ? Carbon::parse($item->data)->format('d/m') : '') .
+                                    (isset($item->hora_fim) ? ' '.$item->hora_fim : '')
+                                );
+                            }
+
+                            // Helpers para imprimir
+                            $fmt = function ($v) {
+                                return $v instanceof \Carbon\Carbon ? $v->format('d/m H:i') : ($v ?? '—');
+                            };
+                        @endphp
+
                         <div class="border-bottom pb-2 mb-2">
                             <strong>{{ $item->titulo }}</strong>
                             <p class="text-muted mb-1">{{ $item->descricao }}</p>
                             <small class="d-block text-muted">
-                                <strong>Período:</strong> {{ $item->data_hora_inicio?->format('d/m H:i') }} - {{ $item->data_hora_fim?->format('d/m H:i') }}
+                                <strong>Período:</strong>
+                                {{ $fmt($iniOut) }} - {{ $fmt($fimOut) }}
                             </small>
                         </div>
                     @empty
-                        <p class="text-muted">A programação deste evento ainda não foi divulgada.</p>
+                        <p class="text-muted mb-0">A programação deste evento ainda não foi divulgada.</p>
                     @endforelse
                 </div>
             </div>
 
-            {{-- Botões de Ação --}}
+            {{-- Relacionados --}}
+            @if(isset($relacionados) && $relacionados->count())
+                <h4 class="mb-3">Eventos relacionados</h4>
+                <div class="row">
+                    @foreach ($relacionados as $e)
+                        <div class="col-sm-6 col-md-4">
+                            <div class="panel panel-default" style="height:100%">
+                                @if($e->logomarca_url ?? false)
+                                    <div class="panel-heading" style="padding:0;border-bottom:none">
+                                        <img src="{{ $e->logomarca_url }}" alt="Logo" class="img-responsive"
+                                             style="width:100%;max-height:160px;object-fit:cover">
+                                    </div>
+                                @endif
+                                <div class="panel-body">
+                                    <h5 style="margin:0 0 6px">
+                                        <a href="{{ route('front.eventos.show', $e) }}">{{ $e->nome }}</a>
+                                    </h5>
+                                    <small class="text-muted">{{ $e->periodo_evento }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
             <div class="mt-4 d-flex gap-2">
-                <a href="{{ route('eventos.index') }}" class="btn btn-secondary">Voltar à Lista</a>
-                @can('update', $evento)
-                    <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-primary">Editar Evento</a>
-                @endcan
+                <a href="{{ route('front.eventos.index') }}" class="btn btn-secondary">Voltar à lista</a>
             </div>
         </div>
 
-        {{-- Coluna Lateral (Direita) --}}
+        {{-- Coluna lateral --}}
         <div class="col-lg-4">
             @if($evento->logomarca_path)
-                <img src="{{ Storage::url($evento->logomarca_path) }}" alt="Logo do evento" class="img-fluid rounded shadow-sm mb-4">
+                <img src="{{ Storage::url($evento->logomarca_path) }}" alt="Logo do evento"
+                     class="img-fluid rounded shadow-sm mb-4">
             @endif
 
-            {{-- Card de Inscrição --}}
             <div class="card mb-4 shadow-sm">
                 <div class="card-header"><strong>Participação</strong></div>
                 <div class="card-body">
                     @auth
-                        @php
-                            $jaInscrito = $evento->inscricoes->contains('user_id', auth()->id());
-                        @endphp
+                        @php $jaInscrito = $evento->inscricoes->contains('user_id', auth()->id()); @endphp
                         @if($jaInscrito)
                             <div class="alert alert-success mb-0">Você já está inscrito.</div>
                         @elseif($evento->inscricoesAbertas())

@@ -1,5 +1,5 @@
 {{-- resources/views/front/eventos-index.blade.php --}}
-@extends('layouts.new-event')
+@extends('layouts.app')
 @section('title', 'Eventos')
 
 @section('content')
@@ -9,7 +9,7 @@
       <h2 style="margin:0 0 10px">Encontre eventos</h2>
       <p class="text-muted" style="margin:0 0 20px">Pesquise e filtre por tipo, categoria e área temática.</p>
     </div>
-    <div class="col-sm-4 text-right" style="padding-top:10px">
+    <div class="col-sm-4 text-end" style="padding-top:10px">
       <a href="{{ route('front.home') }}" class="btn btn-link">Voltar para o início</a>
     </div>
   </div>
@@ -88,7 +88,7 @@
         </select>
       </div>
 
-      <div class="col-sm-12 text-right" style="margin-top:10px">
+      <div class="col-sm-12 text-end" style="margin-top:10px">
         <a href="{{ route('front.eventos.index') }}" class="btn btn-default">Limpar</a>
         <button class="btn btn-primary">Aplicar filtros</button>
       </div>
@@ -124,7 +124,7 @@
               @endif
             </div>
           </div>
-          <div class="panel-footer text-right">
+          <div class="panel-footer text-end">
             <a class="btn btn-primary btn-sm" href="{{ route('front.eventos.show', $e) }}">Ver detalhes</a>
           </div>
         </div>
