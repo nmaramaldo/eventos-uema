@@ -22,12 +22,22 @@ class StorePalestranteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nome' => 'required|string|max:255',
-            'biografia' => 'nullable|string',
-            'email' => 'required|email|max:255',
+            'palestrantes' => ['required', 'array', 'min:1'],
+            'palestrantes.*.nome' => ['required', 'string', 'max:255'],
+            'palestrantes.*.email' => ['nullable', 'email', 'max:255'],
+            'palestrantes.*.biografia' => ['nullable', 'string'],
             'foto_url' => 'nullable|string',
             'eventos' => 'nullable|array',
             'eventos.*' => 'exists:eventos,id'
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'palestrantes.required' => 'Adicione pelo menos um palestrante.',
+            'palestrantes.*.nome.required' => 'O campo nome é obrigatório para todos os palestrantes.',
+            'palestrantes.*.email.email' => 'O campo email deve ser válido.',
         ];
     }
 }

@@ -23,6 +23,7 @@ class UpdateProgramacaoRequest extends FormRequest
     {
         return [
             'evento_id' => 'sometimes|exists:eventos,id',
+            'titulo' => 'sometimes|string|max:255',
             'descricao' => 'sometimes|string',
             'data' => 'sometimes|date',
             'hora_inicio' => 'sometimes',

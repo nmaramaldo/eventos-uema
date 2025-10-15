@@ -1,64 +1,56 @@
 {{-- resources/views/auth/register.blade.php --}}
-@extends('layouts.auth')
+@extends('layouts.guest')
 @section('title', 'Criar conta')
 
 @section('content')
-  {{-- Apenas o CARD. O hero da esquerda já vem do layouts/auth --}}
-  <div class="w-full max-w-md bg-white rounded-2xl shadow px-8 py-8">
-    <div class="flex flex-col items-center mb-6">
-      <img src="{{ asset('new-event/images/uema-logo.png') }}" class="h-12 mb-3" alt="UEMA">
-      <h2 class="text-2xl font-semibold">Criar conta</h2>
+    <div class="text-center mb-4">
+        <img src="{{ asset('new-event/images/uema-logo.png') }}" alt="UEMA" height="48" class="mb-2">
+        <h3 class="mb-1">Criar conta</h3>
+        <div class="text-muted">Preencha os dados abaixo para se registrar</div>
     </div>
 
-    {{-- Erros de validação --}}
+    {{-- Mensagens de erro --}}
     @if ($errors->any())
-      <div class="mb-4 rounded-md bg-red-50 text-red-700 px-4 py-3 text-sm">
-        <ul class="list-disc list-inside">
-          @foreach ($errors->all() as $error)
-            <li>{{ $error }}</li>
-          @endforeach
-        </ul>
-      </div>
+        <div class="alert alert-danger">
+            <div class="fw-semibold mb-1">Ops! Verifique os campos abaixo:</div>
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     @endif
 
-    <form method="POST" action="{{ route('register') }}" class="space-y-4">
-      @csrf
+    <form method="POST" action="{{ route('register') }}" novalidate>
+        @csrf
 
-      <div>
-        <label for="name" class="block text-sm font-medium text-gray-700">Nome</label>
-        <input id="name" name="name" type="text" required autocomplete="name"
-               value="{{ old('name') }}"
-               class="mt-1 block w-full rounded-lg border-gray-300 focus:border-blue-600 focus:ring-blue-600">
-      </div>
+        <div class="mb-3">
+            <label for="name" class="form-label">Nome</label>
+            <input id="name" name="name" type="text" value="{{ old('name') }}" required autofocus class="form-control">
+        </div>
 
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700">E-mail</label>
-        <input id="email" name="email" type="email" required autocomplete="username"
-               value="{{ old('email') }}"
-               class="mt-1 block w-full rounded-lg border-gray-300 focus:border-blue-600 focus:ring-blue-600">
-      </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">E-mail</label>
+            <input id="email" name="email" type="email" value="{{ old('email') }}" required class="form-control">
+        </div>
 
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
-        <input id="password" name="password" type="password" required autocomplete="new-password"
-               class="mt-1 block w-full rounded-lg border-gray-300 focus:border-blue-600 focus:ring-blue-600">
-      </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Senha</label>
+            <input id="password" name="password" type="password" required class="form-control">
+        </div>
 
-      <div>
-        <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Confirmar senha</label>
-        <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password"
-               class="mt-1 block w-full rounded-lg border-gray-300 focus:border-blue-600 focus:ring-blue-600">
-      </div>
+        <div class="mb-4">
+            <label for="password_confirmation" class="form-label">Confirmar senha</label>
+            <input id="password_confirmation" name="password_confirmation" type="password" required class="form-control">
+        </div>
 
-      <button type="submit"
-              class="w-full rounded-xl bg-blue-600 px-4 py-3 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
-        Registrar
-      </button>
+        <button type="submit" class="btn btn-primary w-100">Registrar</button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-gray-600">
-      Já tenho conta.
-      <a href="{{ route('login') }}" class="font-medium text-blue-600 hover:text-blue-700">Entrar</a>
-    </p>
-  </div>
+    <div class="text-center mt-3">
+        <small class="text-muted">
+            Já tem conta?
+            <a href="{{ route('login') }}">Entre aqui</a>
+        </small>
+    </div>
 @endsection

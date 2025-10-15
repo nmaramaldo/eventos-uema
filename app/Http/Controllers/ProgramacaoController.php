@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProgramacaoRequest;
 use App\Models\Event;
 use App\Models\Programacao;
 use App\Models\Local;
@@ -45,24 +46,54 @@ class ProgramacaoController extends Controller
         $this->authorizeManage();
 
         $data = $r->validate([
-            'titulo'            => ['required', 'string', 'max:255'],
-            'descricao'         => ['nullable', 'string'],
-            'data_hora_inicio'  => ['required', 'date'],
-            'data_hora_fim'     => ['required', 'date', 'after_or_equal:data_hora_inicio'],
-            'modalidade' => ['required', 'string', 'max:255'],
-            'capacidade'        => ['nullable', 'integer', 'min:1'],
-            'localidade'        => ['required', 'string', 'max:255'],
-            'requer_inscricao'  => ['nullable', 'boolean'],
+            'atividades' => 'required|array|min:1',
+            'atividades.*.titulo' => 'required|string|max:255',
+            'atividades.*.descricao' => 'nullable|string',
+            'atividades.*.data_hora_inicio' => 'required|date',
+            'atividades.*.data_hora_fim' => 'required|date|after_or_equal:atividades.*.data_hora_inicio',
+            'atividades.*.modalidade' => 'required|string|max:255',
+            'atividades.*.capacidade' => 'nullable|integer|min:1',
+            'atividades.*.localidade' => 'required|string|max:255',
+            'atividades.*.requer_inscricao' => 'nullable|boolean',
         ]);
 
-        $data['evento_id'] = $evento->id;
-        $data['requer_inscricao'] = (bool)($data['requer_inscricao'] ?? false);
 
-        Programacao::create($data);
+        foreach ($data['atividades'] as $atividadeData) {
+            $atividadeData['evento_id'] = $evento->id;
+            $atividadeData['requer_inscricao'] = (bool)($atividadeData['requer_inscricao'] ?? false);
+
+            Programacao::create($atividadeData);
+        }
 
         return redirect()
             ->route('eventos.programacao.index', $evento)
-            ->with('success', 'Atividade adicionada com sucesso.');
+            ->with('success', count($data['atividades']) . ' atividades adicionadas com sucesso!');
+    }
+
+    public function editByEvent(Event $evento, Programacao $atividade)
+    {
+        $this->authorizeManage();
+        
+        return view('eventos.programacao.edit', compact('evento', 'atividade'));
+    }
+
+    public function updateByEvent(UpdateProgramacaoRequest $request, Event $evento, Programacao $atividade)
+    {
+        $this->authorizeManage();
+
+        $atividade->update($request->validated());
+        return redirect()->route('eventos.programacao.index', $evento)
+            ->with('success', 'Atividade atualizada com sucesso!');
+    }
+
+    public function destroyByEvent(Event $evento, Programacao $atividade)
+    {
+        $this->authorizeManage();
+
+        $atividade->delete();
+
+        return redirect()->route('eventos.programacao.index', $evento)
+            ->with('success', 'Atividade removida com sucesso!');
     }
 
     // ---------------------
@@ -89,6 +120,7 @@ class ProgramacaoController extends Controller
             'locais'  => Local::orderBy('nome')->get(),
         ]);
     }
+
 
     public function store(Request $r)
     {
@@ -145,13 +177,13 @@ class ProgramacaoController extends Controller
         return back()->with('success', 'Atividade atualizada.');
     }
 
-    public function destroy(Programacao $eventos_detalhe)
+    public function destroy(Event $evento, Programacao $eventos_detalhe)
     {
         $this->authorizeManage();
 
         $eventos_detalhe->delete();
 
-        return back()->with('success', 'Atividade removida.');
+        return redirect()->route('eventos.programacao.index', $evento)->with('success', 'Atividade removido com sucesso!');
     }
 
     // ---------------------
