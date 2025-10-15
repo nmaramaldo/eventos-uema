@@ -35,6 +35,15 @@
         </div>
 
         <div class="mb-3">
+            <label for="cpf" class="form-label">CPF</label>
+            <input id="cpf" type="text" name="cpf" class="form-control @error('cpf') is-invalid @enderror" value="{{ old('cpf') }}" required placeholder="000.000.000-00">
+            <div id="cpf-feedback" class="invalid-feedback"></div>
+            @error('cpf')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="mb-3">
             <label for="password" class="form-label">Senha</label>
             <input id="password" name="password" type="password" required class="form-control">
         </div>
@@ -54,3 +63,60 @@
         </small>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cpfInput = document.getElementById('cpf');
+    const cpfFeedback = document.getElementById('cpf-feedback');
+
+    // Função para validar o CPF (algoritmo padrão)
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/[^\d]+/g,'');
+        if(cpf == '') return false;
+        if (cpf.length != 11 || /^(\d)\1+$/.test(cpf)) return false;
+        let add = 0;
+        for (let i=0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+        let rev = 11 - (add % 11);
+        if (rev == 10 || rev == 11) rev = 0;
+        if (rev != parseInt(cpf.charAt(9))) return false;
+        add = 0;
+        for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+        rev = 11 - (add % 11);
+        if (rev == 10 || rev == 11) rev = 0;
+        if (rev != parseInt(cpf.charAt(10))) return false;
+        return true;
+    }
+
+    // Evento que acontece enquanto o usuário digita
+    cpfInput.addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\D/g, '');
+        value = value.substring(0, 11); // Limita a 11 dígitos
+        
+        let maskedValue = value;
+        if (value.length > 3) maskedValue = value.substring(0,3) + '.' + value.substring(3);
+        if (value.length > 6) maskedValue = maskedValue.substring(0,7) + '.' + maskedValue.substring(7);
+        if (value.length > 9) maskedValue = maskedValue.substring(0,11) + '-' + maskedValue.substring(11);
+        
+        e.target.value = maskedValue;
+    });
+
+    // Evento que acontece quando o usuário sai do campo
+    cpfInput.addEventListener('blur', function (e) {
+        const cpf = e.target.value;
+        if (cpf.length === 14 && validarCPF(cpf)) {
+            cpfInput.classList.remove('is-invalid');
+            cpfInput.classList.add('is-valid');
+            cpfFeedback.textContent = '';
+        } else if (cpf.length > 0) {
+            cpfInput.classList.remove('is-valid');
+            cpfInput.classList.add('is-invalid');
+            cpfFeedback.textContent = 'CPF inválido.';
+        } else {
+            cpfInput.classList.remove('is-valid', 'is-invalid');
+            cpfFeedback.textContent = '';
+        }
+    });
+});
+</script>
+@endpush

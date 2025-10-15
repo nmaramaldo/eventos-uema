@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
                 'email'        => 'test@example.com',
                 // senha padrão da factory geralmente é 'password'
                 'tipo_usuario' => 'comum',
+                'cpf'          => '924.835.190-59',
                 'ativo'        => true,
             ]);
         }

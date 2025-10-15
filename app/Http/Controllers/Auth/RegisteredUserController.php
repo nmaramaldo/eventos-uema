@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Rules\Cpf;
 
 class RegisteredUserController extends Controller
 {
@@ -27,6 +28,7 @@ class RegisteredUserController extends Controller
             // sem 'lowercase' para evitar erro em versões antigas
             'email'    => ['required', 'string', 'email', 'max:255', Rule::unique(User::class, 'email')],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'cpf' => ['required', new Cpf],
         ]);
 
         $name  = trim($validated['name']);
@@ -38,6 +40,7 @@ class RegisteredUserController extends Controller
             'password'     => Hash::make($validated['password']),
             'tipo_usuario' => 'comum',
             'ativo'        => true,
+            'cpf' => $request->cpf,
         ]);
 
         event(new Registered($user));

@@ -28,6 +28,7 @@ class MasterUserSeeder extends Seeder
                 'password'          => Hash::make($password),
                 'tipo_usuario'      => 'master',   // mantém string para compatibilidade
                 'ativo'             => true,
+                'cpf'                 => '202.648.301-06',
                 'email_verified_at' => now(),
             ]);
         } else {

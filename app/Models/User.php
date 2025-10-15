@@ -46,6 +46,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'cpf',
         'tipo_usuario', // 'comum' | 'admin' | 'master' (ou enum)
         'ativo',        // bool
     ];

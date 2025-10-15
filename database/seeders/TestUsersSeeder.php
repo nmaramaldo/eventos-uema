@@ -23,6 +23,7 @@ class TestUsersSeeder extends Seeder
                 'name' => 'Administrador',
                 'password' => Hash::make('SenhaForte123!'),
                 'tipo_usuario' => UserType::ADMIN,
+                'cpf' => '887.225.200-82'
             ]
         );
 
@@ -32,7 +33,7 @@ class TestUsersSeeder extends Seeder
             [
                 'name' => 'Usuário Comum',
                 'password' => Hash::make('SenhaForte123!'),
-                // 'tipo_usuario' => 'comum' 
+                'cpf' => '308.913.440-39'
             ]
         );
     }
