@@ -3,7 +3,7 @@
 
     {{-- Marca (logo + título) --}}
     <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('front.home') }}">
-      <img src="{{ asset('new-event/images/uema-logo.png') }}" alt="UEMA" height="28">
+      <img src="{{ url('new-event/images/uema-logo.png') }}" alt="UEMA" height="28">
       <span class="fw-semibold">UEMA Eventos</span>
     </a>
 
