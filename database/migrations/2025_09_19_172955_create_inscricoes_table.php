@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('inscricoes', function (Blueprint $table) {
             $table->uuid('id')->primary(); 
             $table->foreignUuid('user_id')->constrained('users');
-            $table->foreignUuid('evento_id')->constrained('eventos');
+            $table->foreignUuid('evento_id')->constrained('eventos')->cascadeOnDelete();;
             $table->string('status');
             $table->timestamp('data_inscricao')->useCurrent();
             $table->boolean('presente')->default(false);
