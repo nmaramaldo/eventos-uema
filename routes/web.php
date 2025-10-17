@@ -101,6 +101,8 @@ Route::middleware('auth')->prefix('app')->group(function () {
             Route::delete('/{palestrante}', [PalestranteController::class, 'destroyByEvent'])->name('eventos.palestrantes.destroy');
         });
 
+        Route::get('/palestrantes', [PalestranteController::class, 'index'])->name('palestrantes.index');
+
         // Certificados
         Route::resource('certificados', CertificadoController::class);
     });

@@ -1,4 +1,4 @@
-@extends('layouts.new-event')
+@extends('layouts.app')
 
 @section('title', 'Logs de Auditoria - ' . class_basename($modelType))
 

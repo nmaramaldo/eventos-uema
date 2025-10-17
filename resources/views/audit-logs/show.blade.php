@@ -1,5 +1,5 @@
 {{-- resources/views/audit-logs/show.blade.php --}}
-@extends('layouts.new-event')
+@extends('layouts.app')
 
 @section('title', 'Detalhes do Log')
 

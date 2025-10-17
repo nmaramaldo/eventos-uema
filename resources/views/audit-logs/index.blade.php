@@ -1,5 +1,5 @@
 {{-- resources/views/audit-logs/index.blade.php --}}
-@extends('layouts.new-event')
+@extends('layouts.app')
 
 @section('title', 'Logs de Auditoria')
 
