@@ -22,6 +22,13 @@ class AppServiceProvider extends ServiceProvider
             Paginator::useBootstrap();
         }
 
+        try {
+            $gitVersion = trim(shell_exec('git describe --tags --abbrev=0'));
+            view()->share('gitVersion', $gitVersion);
+        } catch (\Exception $e) {
+            view()->share('gitVersion', 'N/A');
+        }
+
         // Apenas admin/master ATIVOS podem gerenciar usuários
         Gate::define('manage-users', function ($user) {
             $tipo = $user->tipo_usuario;

@@ -22,6 +22,12 @@
     @yield('content')
   </main>
 
+  <footer class="mt-auto py-3 bg-light">
+    <div class="container">
+        <p class="text-center text-muted">Versão: {{ $gitVersion ?? 'N/A' }}</p>
+    </div>
+  </footer>
+
   @stack('scripts')
 </body>
 </html>
