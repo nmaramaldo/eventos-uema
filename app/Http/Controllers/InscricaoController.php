@@ -48,7 +48,6 @@ class InscricaoController extends Controller
             return back()->withErrors(['error' => 'Você precisa estar logado para se inscrever.']);
         }
 
-        // Aceita evento_id (ou event_id legado)
         $eventoId = $request->input('evento_id') ?? $request->input('event_id');
         if (!$eventoId) {
             return back()->withErrors(['error' => 'Evento não informado.']);
@@ -64,14 +63,13 @@ class InscricaoController extends Controller
             return back()->withErrors(['error' => 'Inscrições indisponíveis para este evento.']);
         }
 
-        // (Opcional) Vagas — só se sua tabela tiver a coluna 'vagas'
+        // Vagas (se houver limite)
         $vagas = $evento->vagasDisponiveis();
         if ($vagas !== null && $vagas <= 0) {
             return back()->withErrors(['error' => 'Não há vagas disponíveis.']);
         }
 
         try {
-            // Evita duplicidade de forma atômica
             $inscricao = Inscricao::firstOrCreate(
                 ['user_id' => $userId, 'evento_id' => $evento->id],
                 ['status'  => 'ativa'] // remova se sua coluna não existir
@@ -83,10 +81,8 @@ class InscricaoController extends Controller
                     ->with('success', 'Inscrição realizada com sucesso.');
             }
 
-            // Já existia
             return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
         } catch (QueryException $e) {
-            // 23000 = violação de constraint (ex.: índice único)
             if ($e->getCode() === '23000') {
                 return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
             }
@@ -105,7 +101,7 @@ class InscricaoController extends Controller
             abort(403);
         }
 
-        $inscricao->load(['usuario', 'evento']); // ajuste se seus relacionamentos tiverem outros nomes
+        $inscricao->load(['usuario', 'evento']);
         return view('inscricoes.show', compact('inscricao'));
     }
 

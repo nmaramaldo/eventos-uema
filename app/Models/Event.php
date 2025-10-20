@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-// RELACIONADOS
 use App\Models\Programacao;
 use App\Models\User;
 use App\Models\Inscricao;
@@ -18,9 +17,7 @@ use App\Models\Palestrante;
 
 class Event extends Model
 {
-    use Auditable;
-    use HasFactory;
-    use HasUuids; // UUID automático (dispensa $incrementing/$keyType/booted)
+    use Auditable, HasFactory, HasUuids;
 
     protected $table = 'eventos';
 
@@ -35,7 +32,7 @@ class Event extends Model
         'data_inicio_inscricao',
         'data_fim_inscricao',
         'tipo_evento',
-        'logomarca_path',   // nome de coluna correto
+        'logomarca_path',
         'status',
         'vagas',
     ];
@@ -52,13 +49,12 @@ class Event extends Model
      * Relacionamentos
      * ========================= */
 
-    // Programação oficial
     public function programacao(): HasMany
     {
         return $this->hasMany(Programacao::class, 'evento_id', 'id');
     }
 
-    // ✅ Alias para compatibilidade com views antigas que usam $evento->detalhes
+    // compat
     public function detalhes(): HasMany
     {
         return $this->hasMany(Programacao::class, 'evento_id', 'id');
@@ -114,9 +110,7 @@ class Event extends Model
             // nulo/0 -> ilimitado
             return null;
         }
-
         $inscritos = $this->inscricoes()->count();
-
         return max(0, $this->vagas - $inscritos);
     }
 
@@ -126,15 +120,45 @@ class Event extends Model
         return in_array($status, ['ativo', 'publicado'], true);
     }
 
-    // Compat para chamadas antigas em views
-    public function periodo_evento(): string
+    /** Evento terminou? */
+    public function isEncerrado(): bool
     {
-        return $this->getPeriodoEventoAttribute();
+        return $this->data_fim_evento && $this->data_fim_evento->lt(now());
     }
-    public function periodo_inscricao(): string
+
+    /** Status “humano” para exibição na lista */
+    public function getStatusExibicaoAttribute(): string
     {
-        return $this->getPeriodoInscricaoAttribute();
+        // rascunho/inativo se não estiver ativo/publicado
+        if (!$this->isAtivo()) {
+            return ucfirst($this->status ?? 'Rascunho');
+        }
+
+        // evento terminou
+        if ($this->isEncerrado()) {
+            return 'Encerrado';
+        }
+
+        // janela de inscrições
+        if ($this->inscricoesAbertas()) {
+            return 'Aberto';
+        }
+
+        $now = now();
+        if ($this->data_inicio_inscricao && $this->data_inicio_inscricao->gt($now)) {
+            return 'Não iniciado';
+        }
+        if ($this->data_fim_inscricao && $this->data_fim_inscricao->lt($now)) {
+            return 'Inscrições encerradas';
+        }
+
+        // fallback
+        return 'Publicado';
     }
+
+    // compat antigo
+    public function periodo_evento(): string { return $this->getPeriodoEventoAttribute(); }
+    public function periodo_inscricao(): string { return $this->getPeriodoInscricaoAttribute(); }
 
     /* =========================
      * Scopes

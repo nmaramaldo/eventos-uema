@@ -2,7 +2,7 @@
   <div class="container">
 
     {{-- Marca (logo + título) --}}
-    <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('front.home') }}">
+    <a class="navbar-brand d-flex align-items-center gap-2 me-auto" href="{{ route('front.home') }}">
       <img src="{{ url('new-event/images/uema-logo.png') }}" alt="UEMA" height="28">
       <span class="fw-semibold">UEMA Eventos</span>
     </a>
@@ -12,9 +12,10 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="collapse navbar-collapse" id="mainNavbar">
-      {{-- Links à esquerda --}}
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    {{-- empurra TODO o conteúdo do collapse para a direita --}}
+    <div class="collapse navbar-collapse justify-content-end" id="mainNavbar">
+      <ul class="navbar-nav align-items-lg-center gap-lg-2 mb-2 mb-lg-0">
+
         {{-- Início (home pública) --}}
         <li class="nav-item">
           <a class="nav-link {{ request()->routeIs('front.home') ? 'active' : '' }}"
@@ -47,12 +48,8 @@
                  href="{{ route('admin.usuarios.index') }}">Administração</a>
             </li>
           @endcan
-        @endauth
-      </ul>
 
-      {{-- Usuário (lado direito) --}}
-      <ul class="navbar-nav ms-auto">
-        @auth
+          {{-- Usuário autenticado (dropdown) --}}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" id="userMenu"
                role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -71,11 +68,13 @@
           </li>
         @endauth
 
+        {{-- Visitante: um único botão Entrar/Cadastrar --}}
         @guest
-          <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Entrar</a></li>
-          @if (Route::has('register'))
-            <li class="nav-item"><a class="nav-link" href="{{ route('register') }}">Cadastrar</a></li>
-          @endif
+          <li class="nav-item">
+            <a class="btn btn-light btn-sm px-3 ms-lg-2" href="{{ route('login') }}">
+              Entrar / Cadastrar
+            </a>
+          </li>
         @endguest
       </ul>
     </div>

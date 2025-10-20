@@ -7,20 +7,34 @@
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+    @if($errors->any())
+        <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
+    @endif
 
     <div class="row">
         {{-- Coluna Principal --}}
         <div class="col-lg-8">
             <h2 class="mb-2">{{ $evento->nome }}</h2>
-            <div class="mb-4">
+
+            {{-- Badges de estado --}}
+            <div class="mb-4 d-flex flex-wrap gap-2">
                 <span class="badge bg-primary">{{ $evento->status ? ucfirst($evento->status) : '—' }}</span>
-                @if($evento->inscricoesAbertas())
+
+                @if(method_exists($evento,'isEncerrado') && $evento->isEncerrado())
+                    <span class="badge bg-dark">Encerrado</span>
+                @elseif($evento->inscricoesAbertas())
                     <span class="badge bg-success">Inscrições abertas</span>
                 @else
                     <span class="badge bg-secondary">Inscrições fechadas</span>
                 @endif
-                @if(!is_null($evento->vagasDisponiveis()))
-                    <span class="badge bg-info">Vagas: {{ $evento->vagasDisponiveis() }}</span>
+
+                @php $vagas = $evento->vagasDisponiveis(); @endphp
+                @if(!is_null($vagas))
+                    @if($vagas > 0)
+                        <span class="badge bg-info">Vagas: {{ $vagas }}</span>
+                    @else
+                        <span class="badge bg-danger">Vagas encerradas</span>
+                    @endif
                 @endif
             </div>
 
@@ -80,7 +94,6 @@
                                 );
                             }
 
-                            // Helpers para imprimir
                             $fmt = function ($v) {
                                 return $v instanceof \Carbon\Carbon ? $v->format('d/m H:i') : ($v ?? '—');
                             };
@@ -137,21 +150,39 @@
                      class="img-fluid rounded shadow-sm mb-4">
             @endif
 
+            {{-- Participação / Inscrição --}}
             <div class="card mb-4 shadow-sm">
                 <div class="card-header"><strong>Participação</strong></div>
                 <div class="card-body">
                     @auth
-                        @php $jaInscrito = $evento->inscricoes->contains('user_id', auth()->id()); @endphp
+                        @php
+                            $jaInscrito   = $evento->inscricoes->contains('user_id', auth()->id());
+                            $vagas        = $evento->vagasDisponiveis();
+                            $semVagas     = !is_null($vagas) && $vagas <= 0;
+                            $inscAbertas  = $evento->inscricoesAbertas();
+                            $encerrado    = method_exists($evento,'isEncerrado') && $evento->isEncerrado();
+                            $motivoFechamento =
+                                $encerrado ? 'O evento já foi encerrado.' :
+                                ($semVagas ? 'As vagas foram preenchidas.' :
+                                'As inscrições não estão abertas no momento.');
+                        @endphp
+
                         @if($jaInscrito)
                             <div class="alert alert-success mb-0">Você já está inscrito.</div>
-                        @elseif($evento->inscricoesAbertas())
+
+                        @elseif($inscAbertas && !$semVagas)
                             <form method="post" action="{{ route('inscricoes.store') }}" class="mb-0">
                                 @csrf
                                 <input type="hidden" name="evento_id" value="{{ $evento->id }}">
                                 <button class="btn btn-primary w-100">Inscrever-se Agora</button>
                             </form>
+
                         @else
-                            <div class="alert alert-info mb-0">As inscrições não estão abertas no momento.</div>
+                            {{-- Botão bloqueado que abre modal explicativa --}}
+                            <button type="button" class="btn btn-outline-secondary w-100"
+                                    data-bs-toggle="modal" data-bs-target="#inscricaoBloqueadaModal">
+                                Inscrição indisponível
+                            </button>
                         @endif
                     @else
                         <a href="{{ route('login') }}" class="btn btn-secondary w-100">Entre para se inscrever</a>
@@ -171,4 +202,53 @@
         </div>
     </div>
 </div>
+
+{{-- Modal: motivo da inscrição indisponível / mensagens de erro --}}
+@auth
+    @php
+        $vagas = $evento->vagasDisponiveis();
+        $semVagas = !is_null($vagas) && $vagas <= 0;
+        $encerrado = method_exists($evento,'isEncerrado') && $evento->isEncerrado();
+        $motivoFechamento =
+            $encerrado ? 'O evento já foi encerrado.' :
+            ($semVagas ? 'As vagas foram preenchidas.' :
+            'As inscrições não estão abertas no momento.');
+    @endphp
+    <div class="modal fade" id="inscricaoBloqueadaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Inscrição indisponível</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">{{ $motivoFechamento }}</p>
+                    @if($errors->any())
+                        <hr class="my-3">
+                        <p class="text-danger mb-0">{{ $errors->first() }}</p>
+                    @endif
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Se houve erro de inscrição, abre o modal automaticamente
+        var hasErrors = {!! $errors->any() ? 'true' : 'false' !!};
+        if (hasErrors) {
+            var modalEl = document.getElementById('inscricaoBloqueadaModal');
+            if (modalEl && window.bootstrap) {
+                var modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+        }
+    });
+    </script>
+    @endpush
+@endauth
 @endsection

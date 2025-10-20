@@ -31,16 +31,27 @@
                         @csrf
                         @method('PUT')
 
-                        {{-- NOME E DESCRIÇÃO --}}
+                        {{-- NOME --}}
                         <div class="mb-3">
                             <label for="nome" class="form-label">Título do Evento *</label>
                             <input type="text" id="nome" name="nome" class="form-control @error('nome') is-invalid @enderror" value="{{ old('nome', $evento->nome) }}" required>
                             @error('nome')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        
-                        {{-- ... Adicione aqui os outros campos que pertencem às Informações Gerais ... --}}
-                        {{-- Ex: Classificação, Área Temática, Datas, Vagas, Status, etc. --}}
-                        {{-- Copie-os do seu arquivo create-step-1.blade.php para cá --}}
+
+                        {{-- STATUS --}}
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status *</label>
+                            <select id="status" name="status" class="form-select @error('status') is-invalid @enderror" required>
+                                <option value="rascunho"  @selected(old('status',$evento->status)==='rascunho')>Rascunho</option>
+                                <option value="publicado" @selected(old('status',$evento->status)==='publicado')>Publicado</option>
+                            </select>
+                            <small class="text-muted d-block mt-1">
+                                <strong>Observação:</strong> o status <em>Encerrado</em> é exibido automaticamente quando a data de término do evento já passou.
+                            </small>
+                            @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
+                        {{-- VAGAS --}}
                         <div class="mb-3">
                             <label for="vagas" class="form-label">Número de Vagas</label>
                             <input type="number" id="vagas" name="vagas" class="form-control @error('vagas') is-invalid @enderror" value="{{ old('vagas', $evento->vagas) }}" placeholder="Deixe em branco para ilimitado">
