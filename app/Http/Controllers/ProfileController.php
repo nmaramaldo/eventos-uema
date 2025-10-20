@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
-use Illuminate\Http\RedirectResponse;
+use App\Rules\Cpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Exibe formulário.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request)
     {
         return view('profile.edit', [
             'user' => $request->user(),
@@ -22,29 +20,57 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * Atualiza informações básicas do perfil.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(Request $request)
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // normaliza/limpa máscara do CPF antes da validação única
+        $cpfRaw = preg_replace('/\D/', '', (string) $request->input('cpf'));
+
+        $validated = $request->validate([
+            'name'  => ['required', 'string', 'max:255'],
+            'email' => [
+                'required', 'string', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'cpf'   => [
+                'nullable',
+                'string',
+                'size:11',
+                new Cpf,
+                Rule::unique('users', 'cpf')->ignore($user->id),
+            ],
+        ], [], [
+            'name'  => 'nome',
+            'email' => 'e-mail',
+            'cpf'   => 'CPF',
+        ]);
+
+        // garante persistência do CPF sem máscara
+        $validated['cpf'] = $cpfRaw ?: null;
+
+        $user->fill($validated);
+
+        // Se o e-mail mudou, invalida a verificação (mantém seu comportamento padrão se aplicável)
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return back()->with('success', 'Perfil atualizado com sucesso!');
     }
 
     /**
-     * Delete the user's account.
+     * Remove a conta do usuário.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
-        $request->validateWithBag('userDeletion', [
+        $request->validate([
             'password' => ['required', 'current_password'],
-        ]);
+        ], [], ['password' => 'senha']);
 
         $user = $request->user();
 
@@ -55,6 +81,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return redirect('/')->with('success', 'Conta excluída com sucesso.');
     }
 }

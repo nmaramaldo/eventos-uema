@@ -16,16 +16,32 @@ class FrontController extends Controller
 
         $recentes = Event::latest('created_at')->take(12)->get();
 
+        // Mesmas áreas do passo de criação (create-step-1)
         $areas = [
-            'Educação',
-            'Medicina',
-            'Saúde e bem-estar',
-            'Direito',
-            'Agricultura, pesca e veterinária',
-            'Artes e humanidades',
+            'Ciências Humanas',
+            'Ciências Sociais',
+            'Ciências Exatas e da Terra',
+            'Engenharias',
+            'Ciências da Saúde',
+            'Ciências Agrárias',
+            'Linguística, Letras e Artes',
+            'Outros',
         ];
 
-        return view('front.home', compact('destaques', 'recentes', 'areas'));
+        // Ícones por área (classes do Bootstrap Icons)
+        // OBS: manter APENAS o sufixo 'bi-...' aqui; na view adicionamos a classe 'bi'.
+        $areaIcons = [
+            'Ciências Humanas'              => 'bi-book',
+            'Ciências Sociais'              => 'bi-people',
+            'Ciências Exatas e da Terra'    => 'bi-cpu',
+            'Engenharias'                   => 'bi-gear-wide-connected',
+            'Ciências da Saúde'             => 'bi-heart-pulse',
+            'Ciências Agrárias'             => 'bi-flower3',
+            'Linguística, Letras e Artes'   => 'bi-palette',
+            'Outros'                        => 'bi-grid-3x3-gap',
+        ];
+
+        return view('front.home', compact('destaques', 'recentes', 'areas', 'areaIcons'));
     }
 
     public function eventos(Request $request)
@@ -57,7 +73,7 @@ class FrontController extends Controller
         return view('front.eventos-index', compact('eventos'));
     }
 
-    // Rota /eventos -> reaproveita o mesmo método dos filtros
+    // Rota /eventos -> reaproveita o mesmo método
     public function index(Request $request)
     {
         return $this->eventos($request);
@@ -65,7 +81,6 @@ class FrontController extends Controller
 
     public function show(Event $evento)
     {
-        // ❗ Relação correta é 'programacao'
         $evento->load([
             'coordenador',
             'inscricoes',

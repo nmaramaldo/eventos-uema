@@ -4,6 +4,17 @@
 
 @section('content')
 <section class="container" style="padding:40px 0; max-width:1140px">
+  <style>
+    /* mesmo visual dos cards da Home */
+    .card-evento{border:0;box-shadow:0 4px 14px rgba(16,24,40,.06);height:100%;transition:transform .12s ease,box-shadow .12s ease}
+    .card-evento:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(16,24,40,.10)}
+    .card-evento .thumb-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#f3f4f6;overflow:hidden;border-top-left-radius:.5rem;border-top-right-radius:.5rem}
+    .card-evento img.thumb{width:100%;height:100%;object-fit:cover;display:block}
+    .thumb-fallback{width:100%;height:100%;display:grid;place-items:center;font-weight:600;color:#6b7280;
+      background:repeating-linear-gradient(45deg,#f9fafb,#f9fafb 10px,#f3f4f6 10px,#f3f4f6 20px)}
+    .badge-status{font-weight:600;letter-spacing:.2px}
+  </style>
+
   <div class="row">
     <div class="col-sm-8">
       <h2 style="margin:0 0 10px">Encontre eventos</h2>
@@ -14,7 +25,7 @@
     </div>
   </div>
 
-  {{-- Filtros --}}
+  {{-- Filtros (mantidos) --}}
   <form method="get" class="panel panel-default" style="padding:15px; margin-bottom:20px">
     <div class="row" style="gap:10px 0">
       <div class="col-sm-4">
@@ -95,39 +106,57 @@
     </div>
   </form>
 
-  {{-- Cards --}}
+  {{-- Cards no mesmo padrão do Home --}}
   <div class="row">
     @forelse ($eventos as $e)
       <div class="col-sm-6 col-md-4">
-        <div class="panel panel-default" style="height:100%">
-          @if($e->logomarca_url)
-            <div class="panel-heading" style="padding:0; border-bottom:none">
-              <img src="{{ $e->logomarca_url }}" alt="Logo" class="img-responsive" style="width:100%; max-height:160px; object-fit:cover">
-            </div>
-          @endif
-          <div class="panel-body">
-            <h4 style="margin-top:0; min-height:48px">
-              <a href="{{ route('front.eventos.show', $e) }}">{{ $e->nome }}</a>
-            </h4>
-            <p class="text-muted" style="min-height:36px">
-              <small>{{ $e->periodo_evento }}</small>
-            </p>
-            <div style="display:flex; gap:6px; flex-wrap:wrap">
-              @if($e->tipo_evento)
-                <span class="label label-info">{{ ucfirst($e->tipo_evento) }}</span>
-              @endif
-              @if($e->tipo_classificacao)
-                <span class="label label-default">{{ $e->tipo_classificacao }}</span>
-              @endif
-              @if($e->area_tematica)
-                <span class="label label-primary">{{ $e->area_tematica }}</span>
+        <a href="{{ route('front.eventos.show', $e) }}" class="text-decoration-none">
+          <div class="card card-evento">
+            <div class="thumb-wrap">
+              @php
+                // suporta tanto logomarca_path (Storage) quanto logomarca_url
+                $thumb = null;
+                if (!empty($e->logomarca_path)) {
+                  $thumb = Storage::url($e->logomarca_path);
+                } elseif (!empty($e->logomarca_url)) {
+                  $thumb = $e->logomarca_url;
+                }
+              @endphp
+              @if($thumb)
+                <img class="thumb" src="{{ $thumb }}" alt="Capa de {{ $e->nome }}">
+              @else
+                <div class="thumb-fallback">{{ \Illuminate\Support\Str::limit($e->nome, 22) }}</div>
               @endif
             </div>
+
+            <div class="card-body">
+              <h4 class="card-title mb-1 text-dark" style="margin-top:0">{{ $e->nome }}</h4>
+              <p class="text-muted small mb-2" style="min-height:18px">{{ $e->periodo_evento }}</p>
+
+              {{-- badge de status igual ao Home --}}
+              <div class="mb-2">
+                @if(View::exists('front.partials.event-badge'))
+                  @include('front.partials.event-badge', ['ev' => $e])
+                @else
+                  <span class="badge bg-primary badge-status">{{ $e->status ?? '—' }}</span>
+                @endif
+              </div>
+
+              {{-- chips informativos (mantidos) --}}
+              <div style="display:flex; gap:6px; flex-wrap:wrap">
+                @if($e->tipo_evento)
+                  <span class="label label-info">{{ ucfirst($e->tipo_evento) }}</span>
+                @endif
+                @if($e->tipo_classificacao)
+                  <span class="label label-default">{{ $e->tipo_classificacao }}</span>
+                @endif
+                @if($e->area_tematica)
+                  <span class="label label-primary">{{ $e->area_tematica }}</span>
+                @endif
+              </div>
+            </div>
           </div>
-          <div class="panel-footer text-end">
-            <a class="btn btn-primary btn-sm" href="{{ route('front.eventos.show', $e) }}">Ver detalhes</a>
-          </div>
-        </div>
+        </a>
       </div>
     @empty
       <div class="col-sm-12">

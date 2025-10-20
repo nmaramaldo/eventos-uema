@@ -39,7 +39,6 @@ Route::prefix('eventos')->name('front.eventos.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-// Auth scaffolding (login, register, logout, etc.)
 require __DIR__ . '/auth.php';
 
 Route::get('/dashboard', fn() => view('dashboard'))
@@ -64,25 +63,20 @@ Route::middleware('auth')->prefix('app')->group(function () {
     // ---- Administrativo (admin/master) ----
     Route::middleware('can:manage-users')->group(function () {
 
-        // Mantém o resource mas sem create/store (usaremos o fluxo em 3 passos)
         Route::resource('eventos', EventController::class)->except(['create', 'store']);
 
-        // Fluxo de criação em 3 passos
         Route::prefix('eventos/criar')->name('eventos.create.')->group(function () {
-            // Passo 1
             Route::get('/passo-1', [EventController::class, 'createStep1'])->name('step1');
             Route::post('/passo-1', [EventController::class, 'storeStep1'])->name('store.step1');
 
-            // Passo 2
             Route::get('/passo-2', [EventController::class, 'createStep2'])->name('step2');
             Route::post('/passo-2', [EventController::class, 'storeStep2'])->name('store.step2');
 
-            // Passo 3
             Route::get('/passo-3', [EventController::class, 'createStep3'])->name('step3');
             Route::post('/passo-3', [EventController::class, 'storeStep3'])->name('store.step3');
         });
 
-        // Programação (geral e por evento)
+        // Programação
         Route::get('eventos/{evento}/programacao', [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
         Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
         Route::post('eventos/{evento}/programacao', [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');
@@ -90,8 +84,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
         Route::put('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'updateByEvent'])->name('eventos.programacao.update');
         Route::delete('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'destroyByEvent'])->name('eventos.programacao.destroy');
 
-
-        // Palestrantes (visão por evento) + recursos
+        // Palestrantes
         Route::prefix('eventos/{evento}/palestrantes')->group(function () {
             Route::get('/', [PalestranteController::class, 'indexByEvent'])->name('eventos.palestrantes.index');
             Route::get('/create', [PalestranteController::class, 'createByEvent'])->name('eventos.palestrantes.create');
@@ -123,7 +116,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN (PROTEGIDO + PERMISSÃO)
+| ADMIN
 |--------------------------------------------------------------------------
 */
 

@@ -23,13 +23,13 @@
                             <textarea id="descricao" name="descricao" class="form-control @error('descricao') is-invalid @enderror" rows="5" required>{{ old('descricao', $eventData['descricao'] ?? '') }}</textarea>
                             @error('descricao')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        
-                        {{-- ✅ CORREÇÃO: CLASSIFICAÇÃO E ÁREA TEMÁTICA COMO SELECT --}}
+
+                        {{-- CLASSIFICAÇÃO E ÁREA TEMÁTICA --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="tipo_classificacao" class="form-label">Classificação *</label>
                                 @php
-                                    $classificacoes = ['Acadêmico', 'Científico', 'Cultural', 'Esportivo', 'Social', 'Workshop', 'Congresso', 'Seminário'];
+                                    $classificacoes = config('eventos.classificacoes', []);
                                 @endphp
                                 <select id="tipo_classificacao" name="tipo_classificacao" class="form-select @error('tipo_classificacao') is-invalid @enderror" required>
                                     <option value="">Selecione...</option>
@@ -44,7 +44,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="area_tematica" class="form-label">Área Temática *</label>
                                 @php
-                                    $areas = ['Ciências Humanas', 'Ciências Sociais', 'Ciências Exatas e da Terra', 'Engenharias', 'Ciências da Saúde', 'Ciências Agrárias', 'Linguística, Letras e Artes', 'Outros'];
+                                    $areas = config('eventos.areas_tematica', []);
                                 @endphp
                                 <select id="area_tematica" name="area_tematica" class="form-select @error('area_tematica') is-invalid @enderror" required>
                                     <option value="">Selecione...</option>
@@ -71,7 +71,7 @@
                                 @error('data_fim_evento')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
-                        
+
                         {{-- DATAS DE INSCRIÇÃO --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -85,7 +85,7 @@
                                 @error('data_fim_inscricao')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
-                        
+
                         {{-- TIPO DE EVENTO E LOGOMARCA --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -112,6 +112,9 @@
                                     <option value="rascunho" @selected(old('status', $eventData['status'] ?? 'rascunho') == 'rascunho')>Rascunho</option>
                                     <option value="publicado" @selected(old('status', $eventData['status'] ?? '') == 'publicado')>Publicado</option>
                                 </select>
+                                <small class="text-muted d-block mt-1">
+                                    <strong>Observação:</strong> o status <em>Encerrado</em> é exibido automaticamente quando a data de término do evento já passou.
+                                </small>
                                 @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="col-md-6 mb-3">
@@ -120,7 +123,7 @@
                                 @error('vagas')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
-                        
+
                         <div class="text-end mt-4">
                             <button type="submit" class="btn btn-primary">Próximo: Programação</button>
                         </div>

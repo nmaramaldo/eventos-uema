@@ -15,17 +15,29 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Paginação com Bootstrap (opcional)
+        // Paginação com Bootstrap (compat 4/5)
         if (method_exists(Paginator::class, 'useBootstrapFive')) {
             Paginator::useBootstrapFive();
         } else {
             Paginator::useBootstrap();
         }
 
+        // Versão/Release no footer
         try {
-            $gitVersion = trim(shell_exec('git describe --tags --abbrev=0'));
+            // Tenta tag mais recente; se não houver, usa hash curto
+            $gitVersion = @trim(shell_exec('git describe --tags --always 2>/dev/null'));
+            if (!$gitVersion) {
+                $gitVersion = @trim(shell_exec('git rev-parse --short HEAD 2>/dev/null'));
+            }
+            if (!$gitVersion) {
+                // fallback para config/env, se existir
+                $gitVersion = config('app.version') ?? env('APP_VERSION', 'N/A');
+            }
+            if (!$gitVersion) {
+                $gitVersion = 'N/A';
+            }
             view()->share('gitVersion', $gitVersion);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             view()->share('gitVersion', 'N/A');
         }
 
