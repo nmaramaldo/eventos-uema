@@ -18,26 +18,22 @@ use Illuminate\Support\Str;
 class EventController extends Controller
 {
     // =========================================================
-    // FLUXO EM 3 PASSOS (CREATE) — salvando a cada passo
+    // FLUXO EM 3 PASSOS (CREATE)
     // =========================================================
 
     public function createStep1()
     {
         $this->authorize('create', Event::class);
-
-        // Se já existe rascunho na sessão, traz os dados do banco para repovoar o formulário
-        $draftId   = session('event_draft_id');
-        $draftData = [];
-        if ($draftId && ($draft = Event::find($draftId))) {
-            $draftData = $draft->only([
-                'nome','descricao','tipo_classificacao','area_tematica',
-                'data_inicio_evento','data_fim_evento',
-                'data_inicio_inscricao','data_fim_inscricao',
-                'tipo_evento','status','vagas'
-            ]);
+        $eventId = session('event_creation_id');
+        $eventData = [];
+        if ($eventId) {
+            $event = Event::find($eventId);
+            if ($event) {
+                $eventData = $event->toArray();
+            } else {
+                session()->forget('event_creation_id');
+            }
         }
-
-        $eventData = array_merge(session('event_creation_data', []), $draftData);
         return view('eventos.create-step-1', compact('eventData'));
     }
 
@@ -60,49 +56,21 @@ class EventController extends Controller
             'vagas'                  => 'nullable|integer|min:0',
         ]);
 
-        // Master só pode 'ativo' ou 'encerrado'
-        $user = auth()->user();
-        $tipo = $user?->tipo_usuario instanceof \BackedEnum ? $user->tipo_usuario->value : (string)($user->tipo_usuario ?? '');
-        if ($tipo === 'master') {
-            $validated['status'] = in_array($validated['status'], ['ativo','encerrado'], true)
-                ? $validated['status']
-                : 'ativo';
+        $eventData = $this->extractEventColumns($validated, true);
+
+        $eventId = session('event_creation_id');
+        if ($eventId) {
+            $event = Event::find($eventId);
+            $event->update($eventData);
+        } else {
+            $event = Event::create($eventData);
+            session()->put('event_creation_id', $event->id);
         }
 
-        // Cria ou atualiza rascunho no banco (progresso fixo)
-        $draftId = session('event_draft_id');
-
-        $evento = DB::transaction(function () use ($validated, $request, $draftId) {
-
-            // Se já existe rascunho, atualiza; senão cria
-            if ($draftId && ($e = Event::find($draftId))) {
-                $e->update($this->extractEventColumns($validated, true));
-                $evento = $e;
-            } else {
-                // status padrão rascunho se não for master/publicado
-                $dados = $this->extractEventColumns($validated, true);
-                if (!isset($dados['status']) || $dados['status'] === '') {
-                    $dados['status'] = 'rascunho';
-                }
-                $evento = Event::create($dados);
-            }
-
-            // Se foi enviada logomarca, salva direto em /banners/{id}
-            if ($request->hasFile('logomarca')) {
-                $path = $request->file('logomarca')->store('banners/'.$evento->id, 'public');
-                $evento->logomarca_path = $path;
-                $evento->save();
-            }
-
-            return $evento;
-        });
-
-        // Guarda o id do rascunho para os próximos passos
-        session()->put('event_draft_id', $evento->id);
-
-        // Mantém dados em sessão só para repovoar (sem arquivo)
-        $data = array_merge(session('event_creation_data', []), collect($validated)->except('logomarca')->toArray());
-        session()->put('event_creation_data', $data);
+        if ($request->hasFile('logomarca')) {
+            $path = $request->file('logomarca')->store('temp_banners', 'public');
+            session()->put('event_creation_logomarca_tmp', $path);
+        }
 
         return redirect()->route('eventos.create.step2');
     }
@@ -110,15 +78,19 @@ class EventController extends Controller
     public function createStep2()
     {
         $this->authorize('create', Event::class);
-
-        $draftId = session('event_draft_id');
-        if (!$draftId || !Event::find($draftId)) {
-            // Se não tem rascunho válido, volta ao passo 1
-            return redirect()->route('eventos.create.step1')
-                ->with('success', 'Retomamos a criação do evento. Preencha o passo 1.');
+        $eventId = session('event_creation_id');
+        if (!$eventId) {
+            return redirect()->route('eventos.create.step1')->with('error', 'Sessão expirada, por favor comece novamente.');
+        }
+        $event = Event::with('programacao')->find($eventId);
+        if (!$event) {
+            session()->forget('event_creation_id');
+            return redirect()->route('eventos.create.step1')->with('error', 'Evento não encontrado, por favor comece novamente.');
         }
 
-        $eventData = session('event_creation_data', []);
+        $eventData = $event->toArray();
+        $eventData['atividades'] = $event->programacao->toArray();
+
         $locais    = Local::orderBy('nome')->get();
         return view('eventos.create-step-2', compact('eventData', 'locais'));
     }
@@ -126,6 +98,10 @@ class EventController extends Controller
     public function storeStep2(Request $request)
     {
         $this->authorize('create', Event::class);
+        $eventId = session('event_creation_id');
+        if (!$eventId) {
+            return redirect()->route('eventos.create.step1')->with('error', 'Evento não encontrado. Por favor, inicie novamente.');
+        }
 
         $validated = $request->validate([
             'atividades'                        => 'nullable|array',
@@ -139,25 +115,17 @@ class EventController extends Controller
             'atividades.*.requer_inscricao'     => 'nullable|boolean',
         ]);
 
-        $draftId = session('event_draft_id');
-        if (!$draftId || !($evento = Event::find($draftId))) {
-            return redirect()->route('eventos.create.step1')->with('success', 'Retomamos a criação do evento.');
-        }
-
-        // Atualiza PROGRAMAÇÃO do rascunho (recria pelo método simples)
-        DB::transaction(function () use ($evento, $validated) {
-            $evento->programacao()->delete();
-            foreach ((array)($validated['atividades'] ?? []) as $a) {
-                $attrs = $this->buildProgramacaoAttrs($evento->id, $a);
-                if (!empty($attrs['titulo'])) {
-                    Programacao::create($attrs);
+        DB::transaction(function () use ($eventId, $validated) {
+            Programacao::where('evento_id', $eventId)->delete();
+            if (!empty($validated['atividades']) && is_array($validated['atividades'])) {
+                foreach ($validated['atividades'] as $a) {
+                    $attrs = $this->buildProgramacaoAttrs($eventId, $a);
+                    if (!empty($attrs['titulo'])) {
+                        Programacao::create($attrs);
+                    }
                 }
             }
         });
-
-        // mantém dados em sessão
-        $data = array_merge(session('event_creation_data', []), $validated);
-        session()->put('event_creation_data', $data);
 
         return redirect()->route('eventos.create.step3');
     }
@@ -165,20 +133,31 @@ class EventController extends Controller
     public function createStep3()
     {
         $this->authorize('create', Event::class);
-
-        $draftId = session('event_draft_id');
-        if (!$draftId || !Event::find($draftId)) {
-            return redirect()->route('eventos.create.step1')
-                ->with('success', 'Retomamos a criação do evento. Preencha o passo 1.');
+        $eventId = session('event_creation_id');
+        if (!$eventId) {
+            return redirect()->route('eventos.create.step1')->with('error', 'Sessão expirada, por favor comece novamente.');
+        }
+        $event = Event::with('palestrantes')->find($eventId);
+        if (!$event) {
+            session()->forget('event_creation_id');
+            return redirect()->route('eventos.create.step1')->with('error', 'Evento não encontrado, por favor comece novamente.');
         }
 
-        $eventData = session('event_creation_data', []);
+        $eventData = $event->toArray();
+        $eventData['palestrantes'] = $event->palestrantes->toArray();
+
         return view('eventos.create-step-3', compact('eventData'));
     }
 
     public function storeStep3(Request $request)
     {
         $this->authorize('create', Event::class);
+        $eventId = session('event_creation_id');
+        $evento = Event::find($eventId);
+
+        if (!$evento) {
+            return redirect()->route('eventos.create.step1')->with('error', 'Evento não encontrado. Por favor, inicie novamente.');
+        }
 
         $validated = $request->validate([
             'palestrantes'             => 'nullable|array',
@@ -188,15 +167,10 @@ class EventController extends Controller
             'palestrantes.*.biografia' => 'nullable|string',
         ]);
 
-        $draftId = session('event_draft_id');
-        if (!$draftId || !($evento = Event::find($draftId))) {
-            return redirect()->route('eventos.create.step1')->with('success', 'Retomamos a criação do evento.');
-        }
-
-        // Atualiza palestrantes do rascunho
         DB::transaction(function () use ($evento, $validated) {
+            // Palestrantes
+            $attach = [];
             if (!empty($validated['palestrantes']) && is_array($validated['palestrantes'])) {
-                $attach = [];
                 foreach ($validated['palestrantes'] as $p) {
                     $id    = trim((string)($p['id']    ?? ''));
                     $nome  = trim((string)($p['nome']  ?? ''));
@@ -215,16 +189,24 @@ class EventController extends Controller
 
                     $attach[] = $pal->id;
                 }
+            }
 
-                if (!empty($attach) && method_exists($evento, 'palestrantes')) {
-                    $evento->palestrantes()->sync($attach);
-                }
+            if (method_exists($evento, 'palestrantes')) {
+                $evento->palestrantes()->sync($attach);
+            }
+
+            // Mover a logomarca que estava temporária
+            $logomarcaTmpPath = session('event_creation_logomarca_tmp');
+            if ($logomarcaTmpPath && Storage::disk('public')->exists($logomarcaTmpPath)) {
+                $newPath = 'banners/'.$evento->id.'/'.basename($logomarcaTmpPath);
+                Storage::disk('public')->makeDirectory('banners/'.$evento->id);
+                Storage::disk('public')->move($logomarcaTmpPath, $newPath);
+                $evento->logomarca_path = $newPath;
+                $evento->save();
             }
         });
 
-        // Finaliza fluxo (limpa sessão de criação)
-        session()->forget('event_creation_data');
-        session()->forget('event_draft_id');
+        session()->forget(['event_creation_id', 'event_creation_logomarca_tmp']);
 
         return redirect()->route('eventos.index')->with('success', 'Evento criado com sucesso!');
     }
@@ -252,6 +234,10 @@ class EventController extends Controller
         return $out;
     }
 
+    /**
+     * Constrói o array de atributos para Programacao
+     * de acordo com as colunas REALMENTE existentes.
+     */
     private function buildProgramacaoAttrs(string $eventoId, array $a): array
     {
         $t      = 'programacao';
@@ -259,6 +245,7 @@ class EventController extends Controller
         $desc   = $a['descricao']   ?? null;
         $mod    = $a['modalidade']  ?? null;
 
+        // origem do horário (create-step usa data_hora_inicio/fim)
         $inicioRaw = $a['inicio'] ?? ($a['data_hora_inicio'] ?? null);
         $fimRaw    = $a['fim']    ?? ($a['data_hora_fim']    ?? null);
 
@@ -274,6 +261,7 @@ class EventController extends Controller
             'requer_inscricao' => !empty($a['requer_inscricao']),
         ];
 
+        // Mapeia colunas de data/hora conforme o schema
         if (Schema::hasColumn($t, 'data')) {
             $attrs['data']        = $inicio ? $inicio->toDateString() : null;
             if (Schema::hasColumn($t, 'hora_inicio')) $attrs['hora_inicio'] = $inicio ? $inicio->format('H:i:s') : null;
@@ -288,6 +276,7 @@ class EventController extends Controller
             if (Schema::hasColumn($t, 'data_hora_fim')) $attrs['data_hora_fim'] = $fim ? $fim->toDateTimeString() : null;
         }
 
+        // Local: usamos 'localidade' (texto) se existir; senão tenta local_id
         if (Schema::hasColumn($t, 'localidade')) {
             $attrs['localidade'] = $a['localidade'] ?? (function () use ($a) {
                 $lid = trim((string)($a['local_id'] ?? ''));
@@ -312,43 +301,19 @@ class EventController extends Controller
     {
         $this->authorize('viewAny', Event::class);
 
-        // Auto-encerramento em massa (ignora cancelados)
-        Event::whereNotNull('data_fim_evento')
-            ->where('data_fim_evento', '<', now())
-            ->whereNotIn('status', ['encerrado','cancelado'])
-            ->update(['status' => 'encerrado']);
-
-        $q       = trim((string) $request->query('q', ''));
-        $status  = $request->query('status');
-        $janela  = $request->query('janela');
-        $now     = now();
+        $q      = trim((string) $request->query('q', ''));
+        $status = $request->query('status');
 
         $query = Event::query();
 
         if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('nome', 'like', "%{$q}%")
-                  ->orWhere('descricao', 'like', "%{$q}%");
-            });
+            $query->where(fn ($w) => $w
+                ->where('nome', 'like', "%{$q}%")
+                ->orWhere('descricao', 'like', "%{$q}%"));
         }
 
         if ($status !== null && $status !== '') {
             $query->where('status', $status);
-        }
-
-        if ($janela === 'abertas') {
-            $query->whereIn('status', ['ativo','publicado'])
-                  ->whereNotNull('data_inicio_inscricao')
-                  ->whereNotNull('data_fim_inscricao')
-                  ->where('data_inicio_inscricao', '<=', $now)
-                  ->where('data_fim_inscricao', '>=', $now);
-        } elseif ($janela === 'fechadas') {
-            $query->where(function ($w) use ($now) {
-                $w->whereNull('data_inicio_inscricao')
-                  ->orWhereNull('data_fim_inscricao')
-                  ->orWhere('data_inicio_inscricao', '>', $now)
-                  ->orWhere('data_fim_inscricao', '<', $now);
-            });
         }
 
         $eventos = $query->latest('created_at')->paginate(15)->withQueryString();
@@ -359,9 +324,6 @@ class EventController extends Controller
     public function show(Event $evento)
     {
         $this->authorize('view', $evento);
-
-        // Mantém coerência ao exibir
-        $evento->ensureStatusUpToDate();
 
         $evento->load([
             'coordenador',
@@ -385,26 +347,15 @@ class EventController extends Controller
 
         $data = $request->validated();
 
-        // Master: força status permitido
-        $user = auth()->user();
-        $tipo = $user?->tipo_usuario instanceof \BackedEnum ? $user->tipo_usuario->value : (string)($user->tipo_usuario ?? '');
-        if ($tipo === 'master') {
-            $data['status'] = in_array($data['status'] ?? 'ativo', ['ativo','encerrado'], true)
-                ? $data['status']
-                : 'ativo';
-        }
-
         DB::transaction(function () use ($evento, $data, $request) {
             $evento->update($data);
 
-            // Recria programação se vier no formulário de edição
-            if (is_array($request->input('atividades'))) {
-                $evento->programacao()->delete();
-                foreach ((array)$request->input('atividades', []) as $a) {
-                    $attrs = $this->buildProgramacaoAttrs($evento->id, $a);
-                    if (!empty($attrs['titulo'])) {
-                        Programacao::create($attrs);
-                    }
+            // Recria programação usando o mesmo helper dinâmico
+            $evento->programacao()->delete();
+            foreach ((array)$request->input('atividades', []) as $a) {
+                $attrs = $this->buildProgramacaoAttrs($evento->id, $a);
+                if (!empty($attrs['titulo'])) {
+                    Programacao::create($attrs);
                 }
             }
         });
