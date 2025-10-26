@@ -63,18 +63,9 @@ Route::middleware('auth')->prefix('app')->group(function () {
     // ---- Administrativo (admin/master) ----
     Route::middleware('can:manage-users')->group(function () {
 
-        Route::resource('eventos', EventController::class)->except(['create', 'store']);
+        // Eventos
+        Route::resource('eventos', EventController::class);
 
-        Route::prefix('eventos/criar')->name('eventos.create.')->group(function () {
-            Route::get('/passo-1', [EventController::class, 'createStep1'])->name('step1');
-            Route::post('/passo-1', [EventController::class, 'storeStep1'])->name('store.step1');
-
-            Route::get('/passo-2', [EventController::class, 'createStep2'])->name('step2');
-            Route::post('/passo-2', [EventController::class, 'storeStep2'])->name('store.step2');
-
-            Route::get('/passo-3', [EventController::class, 'createStep3'])->name('step3');
-            Route::post('/passo-3', [EventController::class, 'storeStep3'])->name('store.step3');
-        });
 
         // Programação
         Route::get('eventos/{evento}/programacao', [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');

@@ -17,7 +17,7 @@
                 </div>
 
                 @can('create', App\Models\Event::class)
-                    <a href="{{ route('eventos.create.step1') }}" class="btn btn-primary ms-auto">
+                    <a href="{{ route('eventos.create') }}" class="btn btn-primary ms-auto">
                         Novo Evento
                     </a>
                 @endcan

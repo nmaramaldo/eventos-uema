@@ -14,28 +14,18 @@ class StoreEventRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nome'                  => ['required', 'string', 'max:255'],
-            'descricao'             => ['nullable', 'string'],
-
-            'tipo_evento'           => ['required', 'string', 'in:presencial,online,hibrido,videoconf'],
-
-            'tipo_classificacao'    => ['nullable', 'string', 'max:255'],
-            'area_tematica'         => ['nullable', 'string', 'max:255'],
-
-            'data_inicio_evento'    => ['required', 'date'],
-            'data_fim_evento'       => ['required', 'date', 'after_or_equal:data_inicio_evento'],
-
-            'data_inicio_inscricao' => ['required', 'date'],
-            'data_fim_inscricao'    => ['required', 'date', 'after_or_equal:data_inicio_inscricao'],
-
-            'coordenador_id'        => ['nullable', 'uuid', 'exists:users,id'],
-            'logomarca_url'         => ['nullable', 'url'],
-
-            'capa'                  => ['sometimes', 'nullable', 'image', 'max:3072'],
-
-            'status'                => ['nullable', 'in:rascunho,ativo,publicado'],
-
-            'vagas'                 => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'nome'                   => 'required|string|max:255',
+            'descricao'              => 'required|string',
+            'tipo_classificacao'     => 'required|string|max:255',
+            'area_tematica'          => 'required|string|max:255',
+            'data_inicio_evento'     => 'required|date',
+            'data_fim_evento'        => 'required|date|after_or_equal:data_inicio_evento',
+            'data_inicio_inscricao'  => 'required|date',
+            'data_fim_inscricao'     => 'required|date|after_or_equal:data_inicio_inscricao',
+            'tipo_evento'            => 'required|string|max:50',
+            'logomarca'              => 'nullable|image|mimes:jpeg,png,gif|max:5120',
+            'status'                 => 'required|string|max:50',
+            'vagas'                  => 'nullable|integer|min:0',
         ];
     }
 
@@ -51,9 +41,7 @@ class StoreEventRequest extends FormRequest
             'data_fim_evento'       => 'término do evento',
             'data_inicio_inscricao' => 'início das inscrições',
             'data_fim_inscricao'    => 'término das inscrições',
-            'coordenador_id'        => 'coordenador',
-            'logomarca_url'         => 'URL da logomarca',
-            'capa'                  => 'imagem de capa',
+            'logomarca'         => 'URL da logomarca',
             'status'                => 'status',
             'vagas'                 => 'vagas do evento',
         ];

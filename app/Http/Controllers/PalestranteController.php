@@ -12,80 +12,6 @@ use PhpParser\Node\Expr\FuncCall;
 
 class PalestranteController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-
-    public function index()
-    {
-        $palestrantes = Palestrante::with(['eventos'])
-            ->orderBy('nome')
-            ->paginate(10);
-
-        return view('palestrantes.index', compact('palestrantes'));
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(Event $evento)
-    {
-        return view('palestrantes.create', compact('evento'));
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StorePalestranteRequest $request, Event $evento)
-    {
-        $palestrante = Palestrante::create($request->validated());
-
-        if ($request->has('eventos')) {
-            $palestrante->eventos()->sync($request->eventos);
-        }
-
-        return redirect()->route('palestrantes.index', ['evento' => $evento->id])->with('success', 'Palestrante cadastrado com sucesso!');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Palestrante $palestrante)
-    {
-        $palestrante->load(['eventos' => function ($query) {
-            $query->with('coordenador')->orderBy('data', 'desc');
-        }]);
-
-        return view('palestrantes.show', compact('palestrante'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdatePalestranteRequest $request, Palestrante $palestrante)
-    {
-        $palestrante->update($request->validated());
-
-        $palestrante->eventos()->sync($request->eventos ?? []);
-
-        return redirect()->route('palestrantes.index')->with('success', 'Palestrante atualizado com sucesso!');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Palestrante $palestrante)
-    {
-
-        if ($palestrante->eventos()->count() > 0) {
-            return redirect()->back()
-                ->with('error', 'Não é possível excluir o palestrante pois existem eventos associados.');
-        }
-
-        $palestrante->delete();
-
-        return redirect()->route('palestrantes.index')->with('success', 'Palestrante excluído com sucesso!');
-    }
 
     public function indexByEvent(Event $evento)
     {
@@ -97,12 +23,12 @@ class PalestranteController extends Controller
         // Busca todos os outros palestrantes para um dropdown de "adicionar"
         $palestrantesDisponiveis = Palestrante::orderBy('nome')->paginate();
 
-        return view('palestrantes.index-by-event', compact('evento', 'palestrantes', 'palestrantesDisponiveis'));
+        return view('palestrantes.index', compact('evento', 'palestrantes', 'palestrantesDisponiveis'));
     }
 
     public function createByEvent(Event $evento)
     {
-        return view('palestrantes.create-by-event', compact('evento'));
+        return view('palestrantes.create', compact('evento'));
     }
 
     public function storeByEvent(StorePalestranteRequest $request, Event $evento)
@@ -113,17 +39,34 @@ class PalestranteController extends Controller
             return redirect()->back()->with('error', 'Adicione pelo menos um palestrante.');
         }
 
-        foreach ($data as $palestranteData) {
-            // Cria o palestrante
-            $palestrante = Palestrante::create($palestranteData);
+        $palestrantesBefore = $evento->palestrantes()->exists();
 
-            // Associa ao evento
-            $palestrante->eventos()->attach($evento->id);
+        foreach ($data as $palestranteData) {
+
+            // Cria o palestrante
+            $palestrante = Palestrante::firstOrCreate(
+                ['email' => $palestranteData['email']], // Busca por email único
+                [ // Se não existir, cria com estes dados
+                    'nome' => $palestranteData['nome'],
+                    'biografia' => $palestranteData['biografia'] ?? null
+                ]
+            );
+
+            // Associa ao evento    
+            if (!$evento->palestrantes()->where('palestrante_id', $palestrante->id)->exists()) {
+                $evento->palestrantes()->attach($palestrante->id);
+            }
         }
 
-        return redirect()
-            ->route('eventos.palestrantes.index', $evento)
-            ->with('success', 'Palestrante(s) cadastrado(s) com sucesso!');
+        if (!$palestrantesBefore) {
+            // primeira vez adicionando palestrantes
+            return redirect()
+                ->route('eventos.index', $evento)
+                ->with('success', 'Palestrante(s) cadastrado(s) com sucesso!');
+        } else {
+            // já havia palestrantes antes 
+            return redirect()->route('eventos.palestrantes.index', $evento);
+        }
     }
 
 
