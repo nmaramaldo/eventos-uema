@@ -18,6 +18,9 @@ use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ProgramacaoController;
 
+// ✅ novo controller (Meus eventos)
+use App\Http\Controllers\MyEventsController;
+
 /*
 |--------------------------------------------------------------------------
 | PÚBLICO
@@ -60,12 +63,15 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->prefix('app')->group(function () {
     Route::get('/', fn() => redirect()->route('eventos.index'))->name('app.home');
 
+    // ✅ “Meus eventos” (organizador/owner) – fora do bloco de can:manage-users
+    Route::get('/meus-eventos', [MyEventsController::class, 'index'])->name('meus-eventos.index');
+    Route::get('/meus-eventos/{evento}/editar', [MyEventsController::class, 'edit'])->name('meus-eventos.edit');
+
     // ---- Administrativo (admin/master) ----
     Route::middleware('can:manage-users')->group(function () {
 
         // Eventos
         Route::resource('eventos', EventController::class);
-
 
         // Programação
         Route::get('eventos/{evento}/programacao', [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');

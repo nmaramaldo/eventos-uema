@@ -1,71 +1,144 @@
 @extends('layouts.app')
-@section('title', 'Gerenciar Evento')
+@section('title', 'Editar Atividade - ' . $evento->nome)
 
 @section('content')
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-9">
-            <h2 class="mb-2">Gerenciar Evento</h2>
-            <h3 class="text-muted fw-light">{{ $evento->nome }}</h3>
-            <hr>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">Editar Atividade do Evento: {{ $evento->nome }}</h3>
+                    </div>
 
-            {{-- BOTÕES DE NAVEGAÇÃO PARA AS SEÇÕES --}}
-            <div class="d-flex gap-2 mb-4">
-                <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-primary">
-                    <i class="fas fa-info-circle me-1"></i> Informações Gerais
-                </a>
-                <a href="{{ route('eventos.programacao.index', $evento) }}" class="btn btn-outline-primary">
-                    <i class="fas fa-calendar-alt me-1"></i> Gerenciar Programação
-                </a>
-                <a href="{{ route('eventos.palestrantes.index', $evento) }}" class="btn btn-outline-primary">
-                    <i class="fas fa-users me-1"></i> Gerenciar Palestrantes
-                </a>
-            </div>
+                    <div class="card-body">
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
 
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4>Informações Gerais e Inscrições</h4>
-                </div>
-                <div class="card-body">
-                    <form action="{{ route('eventos.update', $evento) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
+                        <form
+                            action="{{ route('eventos.programacao.update', ['evento' => $evento->id, 'atividade' => $atividade->id]) }}"
+                            method="POST" id="mainForm">
+                            @csrf
+                            @method('PUT')
 
-                        {{-- NOME --}}
-                        <div class="mb-3">
-                            <label for="nome" class="form-label">Título do Evento *</label>
-                            <input type="text" id="nome" name="nome" class="form-control @error('nome') is-invalid @enderror" value="{{ old('nome', $evento->nome) }}" required>
-                            @error('nome')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
+                            <div class="border p-3 rounded mb-4 bg-light">
+                                <h5 class="mb-3">Detalhes da Atividade</h5>
+                                <div class="row">
+                                    <div class="col-12 mb-2">
+                                        <label for="titulo" class="form-label">Título *</label>
+                                        <input type="text" id="titulo" name="titulo" class="form-control"
+                                            value="{{ old('titulo', $atividade->titulo) }}" required>
+                                    </div>
 
-                        {{-- STATUS --}}
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status *</label>
-                            <select id="status" name="status" class="form-select @error('status') is-invalid @enderror" required>
-                                <option value="rascunho"  @selected(old('status',$evento->status)==='rascunho')>Rascunho</option>
-                                <option value="publicado" @selected(old('status',$evento->status)==='publicado')>Publicado</option>
-                            </select>
-                            <small class="text-muted d-block mt-1">
-                                <strong>Observação:</strong> o status <em>Encerrado</em> é exibido automaticamente quando a data de término do evento já passou.
-                            </small>
-                            @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
+                                    <div class="col-12 mb-2">
+                                        <label for="descricao" class="form-label">Descrição (opcional)</label>
+                                        <textarea id="descricao" name="descricao" class="form-control" rows="2">{{ old('descricao', $atividade->descricao) }}</textarea>
+                                    </div>
 
-                        {{-- VAGAS --}}
-                        <div class="mb-3">
-                            <label for="vagas" class="form-label">Número de Vagas</label>
-                            <input type="number" id="vagas" name="vagas" class="form-control @error('vagas') is-invalid @enderror" value="{{ old('vagas', $evento->vagas) }}" placeholder="Deixe em branco para ilimitado">
-                            @error('vagas')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
+                                    <div class="col-md-4 mb-2">
+                                        <label for="modalidade" class="form-label">Modalidade *</label>
+                                        <select id="modalidade" name="modalidade" class="form-control" required>
+                                            @php
+                                                $modalidades = [
+                                                    'Palestra',
+                                                    'Minicurso',
+                                                    'Mesa-redonda',
+                                                    'Workshop',
+                                                    'Conferência',
+                                                    'Oficina',
+                                                    'Outro',
+                                                ];
+                                            @endphp
+                                            @foreach ($modalidades as $m)
+                                                <option value="{{ $m }}"
+                                                    {{ old('modalidade', $atividade->modalidade) == $m ? 'selected' : '' }}>
+                                                    {{ $m }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
 
-                        <div class="text-end mt-4">
-                            <a href="{{ route('eventos.index') }}" class="btn btn-secondary">Voltar à Lista</a>
-                            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                        </div>
-                    </form>
+                                    <div class="col-md-4 mb-2">
+                                        <label for="data_hora_inicio" class="form-label">Início *</label>
+                                        <input type="datetime-local" id="data_hora_inicio" name="data_hora_inicio"
+                                            class="form-control"
+                                            value="{{ old('data_hora_inicio', \Carbon\Carbon::parse($atividade->data_hora_inicio)->format('Y-m-d\TH:i')) }}"
+                                            required>
+                                    </div>
+
+                                    <div class="col-md-4 mb-2">
+                                        <label for="data_hora_fim" class="form-label">Fim *</label>
+                                        <input type="datetime-local" id="data_hora_fim" name="data_hora_fim"
+                                            class="form-control"
+                                            value="{{ old('data_hora_fim', \Carbon\Carbon::parse($atividade->data_hora_fim)->format('Y-m-d\TH:i')) }}"
+                                            required>
+                                    </div>
+
+                                    <div class="col-md-6 mb-2">
+                                        <label for="localidade" class="form-label">Local *</label>
+                                        <input type="text" id="localidade" name="localidade" class="form-control"
+                                            value="{{ old('localidade', $atividade->local?->nome ?? $atividade->localidade) }}"
+                                            required>
+                                    </div>
+
+                                    <div class="col-md-3 mb-2">
+                                        <label for="capacidade" class="form-label">Vagas (opcional)</label>
+                                        <input type="number" id="capacidade" name="capacidade" class="form-control"
+                                            min="0" value="{{ old('capacidade', $atividade->capacidade) }}">
+                                    </div>
+
+                                    <div class="col-md-3 d-flex align-items-center mt-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" id="requer_inscricao" name="requer_inscricao"
+                                                class="form-check-input"
+                                                {{ old('requer_inscricao', $atividade->requer_inscricao) ? 'checked' : '' }}>
+                                            <label for="requer_inscricao" class="form-check-label">Requer Inscrição?</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- 🔥 NOVO: Palestrantes desta atividade --}}
+                            <div class="border p-3 rounded mb-4">
+                                <h5 class="mb-3">Palestrantes da Atividade</h5>
+
+                                @if(($palestrantes ?? collect())->isEmpty())
+                                    <div class="alert alert-info mb-3">
+                                        Nenhum palestrante cadastrado para este evento.
+                                        <a href="{{ route('eventos.palestrantes.create', $evento) }}">Adicionar palestrantes</a>.
+                                    </div>
+                                @else
+                                    <div class="mb-2">
+                                        <label class="form-label">Selecione 0..n palestrantes</label>
+                                        <select multiple class="form-select" name="palestrantes[]"
+                                                size="8" aria-label="Palestrantes da atividade">
+                                            @foreach($palestrantes as $p)
+                                                <option value="{{ $p->id }}"
+                                                    @selected(in_array($p->id, old('palestrantes', $selecionados ?? [])))
+                                                >
+                                                    {{ $p->nome }} {{ $p->email ? "— {$p->email}" : '' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <small class="text-muted">Use Ctrl/Cmd para múltipla seleção.</small>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{{ route('eventos.programacao.index', $evento) }}"
+                                    class="btn btn-outline-secondary">Cancelar</a>
+                                <button type="submit" class="btn btn-success" id="submitBtn">Salvar Alterações</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 @endsection

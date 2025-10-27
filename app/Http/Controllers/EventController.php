@@ -5,24 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
-use App\Models\Local;
-use App\Models\Palestrante;
-use App\Models\Programacao;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema; // <-- importa
 
 class EventController extends Controller
 {
-
-    // =========================================================
-    // CRUD PADRÃO
-    // =========================================================
-
     public function index(Request $request)
     {
         $this->authorize('viewAny', Event::class);
@@ -50,24 +38,32 @@ class EventController extends Controller
     public function create()
     {
         $this->authorize('create', Event::class);
-        return view('eventos.create');
+        $coordenadores = User::orderBy('name')->get();
+        return view('eventos.create', compact('coordenadores'));
     }
 
     public function store(StoreEventRequest $request)
     {
         $this->authorize('create', Event::class);
-        $validated = $request->validated();
 
-        $validated['tipo_evento'] = $this->normalizeTipoEvento($validated['tipo_evento']);
+        $data = $request->validated();
+        $data['tipo_evento'] = $this->normalizeTipoEvento($data['tipo_evento']);
 
-        $event = Event::create($validated);
+        // ✅ só grava owner_id se a coluna existir
+        if (Schema::hasColumn('eventos', 'owner_id')) {
+            $data['owner_id'] = $data['owner_id'] ?? auth()->id();
+        }
+
+        $event = Event::create($data);
 
         if ($request->hasFile('logomarca')) {
             $path = $request->file('logomarca')->store('banners/' . $event->id, 'public');
             $event->update(['logomarca_path' => $path]);
         }
 
-        return redirect()->route('eventos.programacao.create', $event)->with('success', 'Evento criado com sucesso!');
+        return redirect()
+            ->route('eventos.programacao.create', $event)
+            ->with('success', 'Evento criado com sucesso! Agora adicione a programação.');
     }
 
     public function show(Event $evento)
@@ -93,11 +89,7 @@ class EventController extends Controller
     public function update(UpdateEventRequest $request, Event $evento)
     {
         $this->authorize('update', $evento);
-
-        $data = $request->validated();
-
-        $evento->update($data);
-
+        $evento->update($request->validated());
         return redirect()->route('eventos.show', $evento)->with('success', 'Evento atualizado com sucesso!');
     }
 

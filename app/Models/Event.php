@@ -23,6 +23,7 @@ class Event extends Model
 
     protected $fillable = [
         'coordenador_id',
+        'owner_id',              // ✅ novo: dono do evento
         'nome',
         'descricao',
         'tipo_classificacao',
@@ -63,6 +64,11 @@ class Event extends Model
     public function coordenador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'coordenador_id', 'id');
+    }
+
+    public function owner(): BelongsTo       // ✅ novo
+    {
+        return $this->belongsTo(User::class, 'owner_id', 'id');
     }
 
     public function inscricoes(): HasMany
