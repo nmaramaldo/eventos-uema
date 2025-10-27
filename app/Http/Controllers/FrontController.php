@@ -29,7 +29,6 @@ class FrontController extends Controller
         ];
 
         // Ícones por área (classes do Bootstrap Icons)
-        // OBS: manter APENAS o sufixo 'bi-...' aqui; na view adicionamos a classe 'bi'.
         $areaIcons = [
             'Ciências Humanas'              => 'bi-book',
             'Ciências Sociais'              => 'bi-people',
@@ -86,6 +85,7 @@ class FrontController extends Controller
             'inscricoes',
             'palestrantes',
             'programacao' => fn ($q) => $q->ordenado(),
+            'programacao.palestrantes', // <— necessário p/ chips nas atividades
         ]);
 
         $relacionados = Event::where('id', '!=', $evento->id)

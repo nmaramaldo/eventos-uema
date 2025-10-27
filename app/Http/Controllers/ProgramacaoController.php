@@ -7,14 +7,12 @@ use App\Http\Requests\StoreProgramacaoRequest;
 use App\Models\Event;
 use App\Models\Programacao;
 use App\Models\Local;
+use App\Models\Palestrante;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class ProgramacaoController extends Controller
 {
-    // ---------------------
-    // LISTA por EVENTO
-    // ---------------------
     public function indexByEvent(Event $evento)
     {
         $this->authorizeManage();
@@ -26,9 +24,6 @@ class ProgramacaoController extends Controller
         ]);
     }
 
-    // ---------------------
-    // FORM - criar por EVENTO
-    // ---------------------
     public function createForEvent(Event $evento)
     {
         $this->authorizeManage();
@@ -39,9 +34,6 @@ class ProgramacaoController extends Controller
         ]);
     }
 
-    // ---------------------
-    // STORE - por EVENTO
-    // ---------------------
     public function storeForEvent(StoreProgramacaoRequest $r, Event $evento)
     {
         $this->authorizeManage();
@@ -70,14 +62,29 @@ class ProgramacaoController extends Controller
     {
         $this->authorizeManage();
 
-        return view('eventos.programacao.edit', compact('evento', 'atividade'));
+        // palestrantes do evento para multiselect
+        $palestrantes = $evento->palestrantes()->orderBy('nome')->get();
+        $selecionados = $atividade->palestrantes()->pluck('palestrantes.id')->all();
+
+        return view('eventos.programacao.edit', compact('evento', 'atividade', 'palestrantes', 'selecionados'));
     }
 
     public function updateByEvent(UpdateProgramacaoRequest $request, Event $evento, Programacao $atividade)
     {
         $this->authorizeManage();
 
-        $atividade->update($request->validated());
+        $validated = $request->validated();
+        $atividade->update($validated);
+
+        // sincroniza palestrantes (0..n)
+        $ids = collect($request->input('palestrantes', []))
+            ->filter() // remove null/empty
+            ->unique()
+            ->values()
+            ->all();
+
+        $atividade->palestrantes()->sync($ids);
+
         return redirect()->route('eventos.programacao.index', $evento)
             ->with('success', 'Atividade atualizada com sucesso!');
     }
@@ -92,11 +99,8 @@ class ProgramacaoController extends Controller
             ->with('success', 'Atividade removida com sucesso!');
     }
 
-
-    // ---------------------
     private function authorizeManage(): void
     {
-        // Usa a gate que você já tem (manage-users)
         if (!Gate::allows('manage-users')) {
             abort(403);
         }

@@ -6,21 +6,14 @@ use App\Http\Requests\StorePalestranteRequest;
 use App\Http\Requests\UpdatePalestranteRequest;
 use App\Models\Event;
 use App\Models\Palestrante;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use PhpParser\Node\Expr\FuncCall;
 
 class PalestranteController extends Controller
 {
-
     public function indexByEvent(Event $evento)
     {
-        $this->authorize('update', $evento); // Usa a permissão do evento
+        $this->authorize('update', $evento);
 
-        // Carrega os palestrantes já associados
         $palestrantes = $evento->palestrantes()->orderBy('nome')->paginate();
-
-        // Busca todos os outros palestrantes para um dropdown de "adicionar"
         $palestrantesDisponiveis = Palestrante::orderBy('nome')->paginate();
 
         return view('palestrantes.index', compact('evento', 'palestrantes', 'palestrantesDisponiveis'));
@@ -28,47 +21,56 @@ class PalestranteController extends Controller
 
     public function createByEvent(Event $evento)
     {
+        // para montar o select de atividades
+        $evento->load(['programacao' => fn($q) => $q->ordenado()]);
         return view('palestrantes.create', compact('evento'));
     }
 
     public function storeByEvent(StorePalestranteRequest $request, Event $evento)
     {
         $data = $request->input('palestrantes', []);
-
         if (empty($data)) {
-            return redirect()->back()->with('error', 'Adicione pelo menos um palestrante.');
+            return back()->with('error', 'Adicione pelo menos um palestrante.');
         }
 
         $palestrantesBefore = $evento->palestrantes()->exists();
 
-        foreach ($data as $palestranteData) {
-
-            // Cria o palestrante
+        foreach ($data as $i => $palestranteData) {
+            // cria/encontra
             $palestrante = Palestrante::firstOrCreate(
-                ['email' => $palestranteData['email']], // Busca por email único
-                [ // Se não existir, cria com estes dados
-                    'nome' => $palestranteData['nome'],
-                    'biografia' => $palestranteData['biografia'] ?? null
+                !empty($palestranteData['email'])
+                    ? ['email' => $palestranteData['email']]
+                    : ['nome'  => $palestranteData['nome']],
+                [
+                    'nome'      => $palestranteData['nome'] ?? null,
+                    'biografia' => $palestranteData['biografia'] ?? null,
                 ]
             );
 
-            // Associa ao evento    
-            if (!$evento->palestrantes()->where('palestrante_id', $palestrante->id)->exists()) {
-                $evento->palestrantes()->attach($palestrante->id);
+            // upload da foto deste índice
+            if ($request->hasFile("palestrantes.$i.foto")) {
+                $path = $request->file("palestrantes.$i.foto")
+                    ->store("speakers/{$palestrante->id}", 'public');
+                $palestrante->update(['foto' => $path]);
+            }
+
+            // vincula ao evento
+            $evento->palestrantes()->syncWithoutDetaching([$palestrante->id]);
+
+            // vincula às atividades (se vieram)
+            $atividades = $palestranteData['atividades'] ?? [];
+            if (!empty($atividades)) {
+                $validos = $evento->programacao()->whereIn('id', $atividades)->pluck('id')->all();
+                if (!empty($validos)) {
+                    $palestrante->atividades()->syncWithoutDetaching($validos);
+                }
             }
         }
 
-        if (!$palestrantesBefore) {
-            // primeira vez adicionando palestrantes
-            return redirect()
-                ->route('eventos.index', $evento)
-                ->with('success', 'Palestrante(s) cadastrado(s) com sucesso!');
-        } else {
-            // já havia palestrantes antes 
-            return redirect()->route('eventos.palestrantes.index', $evento);
-        }
+        return $palestrantesBefore
+            ? redirect()->route('eventos.palestrantes.index', $evento)
+            : redirect()->route('eventos.index')->with('success', 'Palestrante(s) cadastrado(s) com sucesso!');
     }
-
 
     public function editByEvent(Event $evento, Palestrante $palestrante)
     {

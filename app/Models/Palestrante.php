@@ -12,7 +12,6 @@ class Palestrante extends Model
 
     protected $table = 'palestrantes';
 
-    // PK é UUID (string)
     public $incrementing = false;
     protected $keyType   = 'string';
 
@@ -20,14 +19,9 @@ class Palestrante extends Model
         'nome',
         'email',
         'biografia',
-        'foto',
-        // se futuramente adicionar colunas, inclua-as aqui
-        // ex.: 'email', 'cargo', 'mini_bio'
+        'foto',     // << necessário pro upload
     ];
 
-    /**
-     * Gera UUID automaticamente ao criar o registro.
-     */
     protected static function booted(): void
     {
         static::creating(function (self $m) {
@@ -41,19 +35,26 @@ class Palestrante extends Model
     {
         return $this->belongsToMany(
             Event::class,
-            'evento_palestrante',   // tabela pivô
+            'evento_palestrante',
             'palestrante_id',
             'evento_id'
         )->withTimestamps();
     }
 
+    /** Atividades (programação) em que este palestrante participa */
     public function atividades()
     {
         return $this->belongsToMany(
             Programacao::class,
-            'evento_detalhe_palestrante', // pivô para atividades (se existir)
+            'programacao_palestrante',
             'palestrante_id',
-            'evento_detalhe_id'
+            'programacao_id'
         )->withTimestamps();
+    }
+
+    /** URL pública da foto (ou null) */
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto ? \Storage::disk('public')->url($this->foto) : null;
     }
 }

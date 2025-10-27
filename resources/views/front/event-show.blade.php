@@ -16,7 +16,6 @@
         <div class="col-lg-8">
             <h2 class="mb-2">{{ $evento->nome }}</h2>
 
-            {{-- Badges de estado --}}
             <div class="mb-4 d-flex flex-wrap gap-2">
                 <span class="badge bg-primary">{{ $evento->status ? ucfirst($evento->status) : '—' }}</span>
 
@@ -60,15 +59,69 @@
                 </div>
             @endif
 
-            {{-- Programação --}}
+            {{-- PALESTRANTES (grid) --}}
+            @if($evento->palestrantes->count())
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header"><strong>Palestrantes</strong></div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        @foreach($evento->palestrantes as $sp)
+                        <div class="col-6 col-md-4 col-lg-3 text-center">
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#speakerModal{{ $sp->id }}" class="text-decoration-none">
+                                <div class="mx-auto mb-2" style="width:110px;height:110px;border:4px solid #1d3ea6;border-radius:50%;overflow:hidden">
+                                    @if($sp->foto_url)
+                                        <img src="{{ $sp->foto_url }}" alt="{{ $sp->nome }}" style="width:100%;height:100%;object-fit:cover;">
+                                    @else
+                                        <div class="d-flex align-items-center justify-content-center bg-light" style="width:100%;height:100%;">
+                                            <span class="text-muted">Sem foto</span>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="fw-semibold text-dark">{{ $sp->nome }}</div>
+                            </a>
+                        </div>
+
+                        {{-- Modal do palestrante --}}
+                        <div class="modal fade" id="speakerModal{{ $sp->id }}" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                              <div class="modal-body p-4">
+                                <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <div class="text-center mb-3">
+                                  <div class="mx-auto mb-3" style="width:160px;height:160px;border:6px solid #1d3ea6;border-radius:50%;overflow:hidden">
+                                    @if($sp->foto_url)
+                                      <img src="{{ $sp->foto_url }}" alt="{{ $sp->nome }}" style="width:100%;height:100%;object-fit:cover;">
+                                    @else
+                                      <div class="d-flex align-items-center justify-content-center bg-light" style="width:100%;height:100%;">
+                                        <span class="text-muted">Sem foto</span>
+                                      </div>
+                                    @endif
+                                  </div>
+                                  <h3 class="mb-3">{{ $sp->nome }}</h3>
+                                  @if($sp->biografia)
+                                    <p class="text-muted">{{ $sp->biografia }}</p>
+                                  @endif
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            {{-- Programação com palestrantes por atividade --}}
             <div class="card mb-4 shadow-sm">
                 <div class="card-header"><strong>Programação</strong></div>
                 <div class="card-body">
                     @php use Carbon\Carbon; @endphp
-
                     @forelse($evento->programacao as $item)
                         @php
-                            // Normaliza INÍCIO
                             $iniOut = null;
                             if (!empty($item->data_hora_inicio)) {
                                 $iniOut = Carbon::parse($item->data_hora_inicio);
@@ -81,7 +134,6 @@
                                 );
                             }
 
-                            // Normaliza FIM
                             $fimOut = null;
                             if (!empty($item->data_hora_fim)) {
                                 $fimOut = Carbon::parse($item->data_hora_fim);
@@ -94,49 +146,31 @@
                                 );
                             }
 
-                            $fmt = function ($v) {
-                                return $v instanceof \Carbon\Carbon ? $v->format('d/m H:i') : ($v ?? '—');
-                            };
+                            $fmt = fn($v) => $v instanceof \Carbon\Carbon ? $v->format('d/m H:i') : ($v ?? '—');
                         @endphp
 
-                        <div class="border-bottom pb-2 mb-2">
-                            <strong>{{ $item->titulo }}</strong>
-                            <p class="text-muted mb-1">{{ $item->descricao }}</p>
-                            <small class="d-block text-muted">
-                                <strong>Período:</strong>
-                                {{ $fmt($iniOut) }} - {{ $fmt($fimOut) }}
+                        <div class="border-bottom pb-2 mb-3">
+                            <strong class="d-block">{{ $item->titulo }}</strong>
+                            @if($item->descricao)
+                                <p class="text-muted mb-1">{{ $item->descricao }}</p>
+                            @endif
+                            <small class="d-block text-muted mb-2">
+                                <strong>Período:</strong> {{ $fmt($iniOut) }} - {{ $fmt($fimOut) }}
                             </small>
+
+                            @if($item->palestrantes->count())
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($item->palestrantes as $sp)
+                                        <span class="badge rounded-pill text-bg-info">{{ $sp->nome }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
                     @empty
                         <p class="text-muted mb-0">A programação deste evento ainda não foi divulgada.</p>
                     @endforelse
                 </div>
             </div>
-
-            {{-- Relacionados --}}
-            @if(isset($relacionados) && $relacionados->count())
-                <h4 class="mb-3">Eventos relacionados</h4>
-                <div class="row">
-                    @foreach ($relacionados as $e)
-                        <div class="col-sm-6 col-md-4">
-                            <div class="panel panel-default" style="height:100%">
-                                @if($e->logomarca_url ?? false)
-                                    <div class="panel-heading" style="padding:0;border-bottom:none">
-                                        <img src="{{ $e->logomarca_url }}" alt="Logo" class="img-responsive"
-                                             style="width:100%;max-height:160px;object-fit:cover">
-                                    </div>
-                                @endif
-                                <div class="panel-body">
-                                    <h5 style="margin:0 0 6px">
-                                        <a href="{{ route('front.eventos.show', $e) }}">{{ $e->nome }}</a>
-                                    </h5>
-                                    <small class="text-muted">{{ $e->periodo_evento }}</small>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
 
             <div class="mt-4 d-flex gap-2">
                 <a href="{{ route('front.eventos.index') }}" class="btn btn-secondary">Voltar à lista</a>
@@ -150,7 +184,6 @@
                      class="img-fluid rounded shadow-sm mb-4">
             @endif
 
-            {{-- Participação / Inscrição --}}
             <div class="card mb-4 shadow-sm">
                 <div class="card-header"><strong>Participação</strong></div>
                 <div class="card-body">
@@ -169,16 +202,13 @@
 
                         @if($jaInscrito)
                             <div class="alert alert-success mb-0">Você já está inscrito.</div>
-
                         @elseif($inscAbertas && !$semVagas)
                             <form method="post" action="{{ route('inscricoes.store') }}" class="mb-0">
                                 @csrf
                                 <input type="hidden" name="evento_id" value="{{ $evento->id }}">
                                 <button class="btn btn-primary w-100">Inscrever-se Agora</button>
                             </form>
-
                         @else
-                            {{-- Botão bloqueado que abre modal explicativa --}}
                             <button type="button" class="btn btn-outline-secondary w-100"
                                     data-bs-toggle="modal" data-bs-target="#inscricaoBloqueadaModal">
                                 Inscrição indisponível
@@ -238,7 +268,6 @@
     @push('scripts')
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Se houve erro de inscrição, abre o modal automaticamente
         var hasErrors = {!! $errors->any() ? 'true' : 'false' !!};
         if (hasErrors) {
             var modalEl = document.getElementById('inscricaoBloqueadaModal');
