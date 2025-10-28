@@ -105,6 +105,10 @@ Route::middleware('auth')->prefix('app')->group(function () {
         [NotificacaoController::class, 'marcarComoLida']
     )->name('notificacoes.marcarComoLida');
 
+    Route::delete('/inscricoes/{evento}', [InscricaoController::class, 'destroy'])
+     ->name('inscricoes.cancelar')
+     ->middleware('auth'); // apenas usuários logados
+
     // Logs de auditoria
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');

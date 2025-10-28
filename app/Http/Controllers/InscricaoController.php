@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateInscricaoRequest;
 use App\Models\Event;
 use App\Models\Inscricao;
 use Illuminate\Database\QueryException;
-use Illuminate\Http\Request;
 
 class InscricaoController extends Controller
 {
@@ -16,10 +15,8 @@ class InscricaoController extends Controller
      */
     public function index()
     {
-        $userId = auth()->id();
-
         $inscricoes = Inscricao::with('evento')
-            ->where('user_id', $userId)
+            ->where('user_id', auth()->id())
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -27,129 +24,83 @@ class InscricaoController extends Controller
     }
 
     /**
-     * (Opcional) Form de criação.
-     */
-    public function create()
-    {
-        $eventos = Event::where('data_inicio_evento', '>=', now())
-            ->orderBy('data_inicio_evento')
-            ->get();
-
-        return view('inscricoes.create', compact('eventos'));
-    }
-
-    /**
-     * Inscrever (idempotente).
+     * Inscrever o usuário logado em um evento.
      */
     public function store(StoreInscricaoRequest $request)
     {
-        $userId = auth()->id();
-        if (!$userId) {
-            return back()->withErrors(['error' => 'Você precisa estar logado para se inscrever.']);
-        }
+        $evento = Event::findOrFail($request->input('evento_id'));
 
-        $eventoId = $request->input('evento_id') ?? $request->input('event_id');
-        if (!$eventoId) {
-            return back()->withErrors(['error' => 'Evento não informado.']);
-        }
+        // ✅ AUTORIZAÇÃO: Chama o método 'create' da InscricaoPolicy.
+        $this->authorize('create', Inscricao::class);
 
-        $evento = Event::find($eventoId);
-        if (!$evento) {
-            return back()->withErrors(['error' => 'Evento inválido.']);
-        }
-
-        // Janela de inscrições deve estar aberta
+        // Validações de negócio que você já tinha (estão ótimas!)
         if (!$evento->inscricoesAbertas()) {
-            return back()->withErrors(['error' => 'Inscrições indisponíveis para este evento.']);
+            return back()->with('error', 'As inscrições para este evento não estão abertas.');
+        }
+        if ($evento->vagasDisponiveis() !== null && $evento->vagasDisponiveis() <= 0) {
+            return back()->with('error', 'Não há vagas disponíveis para este evento.');
         }
 
-        // Vagas (se houver limite)
-        $vagas = $evento->vagasDisponiveis();
-        if ($vagas !== null && $vagas <= 0) {
-            return back()->withErrors(['error' => 'Não há vagas disponíveis.']);
+        // Tenta criar a inscrição (ou a recupera se já existir)
+        $inscricao = Inscricao::firstOrCreate(
+            ['user_id' => auth()->id(), 'evento_id' => $evento->id],
+            ['status' => 'ativa'] // Será ignorado se a inscrição já existir
+        );
+
+        // Verifica se a inscrição foi criada nesta requisição
+        if ($inscricao->wasRecentlyCreated) {
+            return redirect()->route('inscricoes.index')->with('success', 'Inscrição realizada com sucesso!');
         }
 
-        try {
-            $inscricao = Inscricao::firstOrCreate(
-                ['user_id' => $userId, 'evento_id' => $evento->id],
-                ['status'  => 'ativa'] // remova se sua coluna não existir
-            );
-
-            if ($inscricao->wasRecentlyCreated) {
-                return redirect()
-                    ->route('inscricoes.index')
-                    ->with('success', 'Inscrição realizada com sucesso.');
-            }
-
-            return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
-        } catch (QueryException $e) {
-            if ($e->getCode() === '23000') {
-                return back()->withErrors(['error' => 'Você já está inscrito neste evento.']);
-            }
-            return back()->withErrors(['error' => 'Erro ao processar a inscrição.']);
-        } catch (\Throwable $e) {
-            return back()->withErrors(['error' => 'Erro ao processar a inscrição.']);
-        }
+        return redirect()->route('inscricoes.index')->with('info', 'Você já estava inscrito neste evento.');
     }
 
     /**
-     * Ver inscrição.
+     * Ver detalhes de uma inscrição específica.
      */
     public function show(Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $inscricao->load(['usuario', 'evento']);
+        // ✅ AUTORIZAÇÃO: Chama o método 'view' da InscricaoPolicy.
+        $this->authorize('view', $inscricao);
+        
+        $inscricao->load(['evento']);
         return view('inscricoes.show', compact('inscricao'));
     }
 
     /**
-     * (Opcional) Editar.
+     * Mostra o formulário para editar uma inscrição.
      */
     public function edit(Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $eventos = Event::where('data_inicio_evento', '>=', now())
-            ->orderBy('data_inicio_evento')
-            ->get();
-
-        return view('inscricoes.edit', compact('inscricao', 'eventos'));
+        // ✅ AUTORIZAÇÃO: Chama o método 'update' da InscricaoPolicy.
+        $this->authorize('update', $inscricao);
+        
+        return view('inscricoes.edit', compact('inscricao'));
     }
 
     /**
-     * (Opcional) Atualizar.
+     * Atualiza uma inscrição.
      */
     public function update(UpdateInscricaoRequest $request, Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->id()) {
-            abort(403);
-        }
-
+        // ✅ AUTORIZAÇÃO: Chama o método 'update' da InscricaoPolicy.
+        $this->authorize('update', $inscricao);
+        
         $inscricao->update($request->validated());
-
-        return redirect()
-            ->route('inscricoes.index')
-            ->with('success', 'Inscrição atualizada com sucesso!');
+        return redirect()->route('inscricoes.index')->with('success', 'Inscrição atualizada com sucesso!');
     }
 
     /**
-     * Cancelar inscrição.
+     * Cancelar (deletar) uma inscrição.
      */
     public function destroy(Inscricao $inscricao)
     {
-        if ($inscricao->user_id !== auth()->id()) {
-            abort(403);
-        }
-
+        // ✅ AUTORIZAÇÃO: Chama o método 'delete' da InscricaoPolicy.
+        $this->authorize('delete', $inscricao);
+        
         $inscricao->delete();
-
-        return redirect()
-            ->route('inscricoes.index')
-            ->with('success', 'Inscrição deletada com sucesso!');
+        
+        // ✅ MENSAGEM: Melhorada para maior clareza.
+        return redirect()->route('inscricoes.index')->with('success', 'Inscrição cancelada com sucesso!');
     }
 }

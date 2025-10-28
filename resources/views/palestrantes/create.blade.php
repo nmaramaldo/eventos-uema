@@ -49,7 +49,7 @@
                   <input type="text" id="new_speaker_name" class="form-control">
                 </div>
                 <div class="col-md-6 mb-2">
-                  <label class="form-label">E-mail (opcional)</label>
+                  <label class="form-label">E-mail *</label>
                   <input type="email" id="new_speaker_email" class="form-control">
                 </div>
                 <div class="col-md-12 mb-2 mt-2">

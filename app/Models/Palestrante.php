@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use Illuminate\Support\Str; 
+use Illuminate\Support\Facades\Storage; 
 
 class Palestrante extends Model
 {
@@ -42,7 +43,7 @@ class Palestrante extends Model
     }
 
     /** Atividades (programação) em que este palestrante participa */
-    public function atividades()
+    public function programacoes()
     {
         return $this->belongsToMany(
             Programacao::class,
@@ -55,6 +56,6 @@ class Palestrante extends Model
     /** URL pública da foto (ou null) */
     public function getFotoUrlAttribute(): ?string
     {
-        return $this->foto ? \Storage::disk('public')->url($this->foto) : null;
+        return $this->foto ? Storage::disk('public')->url($this->foto) : null;
     }
 }

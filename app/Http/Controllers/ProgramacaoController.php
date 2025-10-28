@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\UpdateProgramacaoRequest;
 use App\Http\Requests\StoreProgramacaoRequest;
+use App\Http\Requests\UpdateProgramacaoRequest;
 use App\Models\Event;
-use App\Models\Programacao;
 use App\Models\Local;
 use App\Models\Palestrante;
-use Illuminate\Http\Request;
+use App\Models\Programacao;
 use Illuminate\Support\Facades\Gate;
 
 class ProgramacaoController extends Controller
@@ -17,10 +16,12 @@ class ProgramacaoController extends Controller
     {
         $this->authorizeManage();
 
+        // carrega relações necessárias
         $evento->load(['detalhes.local']);
+
         return view('eventos.programacao.index', [
-            'evento'  => $evento,
-            'itens'   => $evento->detalhes()->orderBy('data_hora_inicio')->get(),
+            'evento' => $evento,
+            'itens'  => $evento->detalhes()->orderBy('data_hora_inicio')->get(),
         ]);
     }
 
@@ -34,37 +35,40 @@ class ProgramacaoController extends Controller
         ]);
     }
 
-    public function storeForEvent(StoreProgramacaoRequest $r, Event $evento)
+    public function storeForEvent(StoreProgramacaoRequest $request, Event $evento)
     {
         $this->authorizeManage();
 
-        $data = $r->validated();
+        $data = $request->validated();
 
+        // cria múltiplas atividades de uma vez
         foreach ($data['atividades'] as $atividadeData) {
             $atividadeData['evento_id'] = $evento->id;
-            $atividadeData['requer_inscricao'] = (bool)($atividadeData['requer_inscricao'] ?? false);
+            $atividadeData['requer_inscricao'] = !empty($atividadeData['requer_inscricao']);
 
             Programacao::create($atividadeData);
         }
 
+        // checa se foi a primeira vez que o evento recebeu atividades
         $isFirstTime = $evento->programacao()->count() === count($data['atividades']);
 
         if ($isFirstTime && $evento->palestrantes()->count() === 0) {
             return redirect()
                 ->route('eventos.palestrantes.create', $evento)
                 ->with('success', count($data['atividades']) . ' atividades adicionadas com sucesso! Agora adicione os palestrantes.');
-        } else {
-            return redirect()->route('eventos.programacao.index', $evento);
         }
+
+        return redirect()
+            ->route('eventos.programacao.index', $evento)
+            ->with('success', 'Atividades adicionadas com sucesso!');
     }
 
     public function editByEvent(Event $evento, Programacao $atividade)
     {
         $this->authorizeManage();
 
-        // palestrantes do evento para multiselect
         $palestrantes = $evento->palestrantes()->orderBy('nome')->get();
-        $selecionados = $atividade->palestrantes()->pluck('palestrantes.id')->all();
+        $selecionados = $atividade->palestrantes()->pluck('palestrantes.id')->toArray();
 
         return view('eventos.programacao.edit', compact('evento', 'atividade', 'palestrantes', 'selecionados'));
     }
@@ -76,16 +80,17 @@ class ProgramacaoController extends Controller
         $validated = $request->validated();
         $atividade->update($validated);
 
-        // sincroniza palestrantes (0..n)
+        // sincroniza os palestrantes vinculados
         $ids = collect($request->input('palestrantes', []))
-            ->filter() // remove null/empty
+            ->filter()
             ->unique()
             ->values()
             ->all();
 
         $atividade->palestrantes()->sync($ids);
 
-        return redirect()->route('eventos.programacao.index', $evento)
+        return redirect()
+            ->route('eventos.programacao.index', $evento)
             ->with('success', 'Atividade atualizada com sucesso!');
     }
 
@@ -95,14 +100,13 @@ class ProgramacaoController extends Controller
 
         $atividade->delete();
 
-        return redirect()->route('eventos.programacao.index', $evento)
+        return redirect()
+            ->route('eventos.programacao.index', $evento)
             ->with('success', 'Atividade removida com sucesso!');
     }
 
     private function authorizeManage(): void
     {
-        if (!Gate::allows('manage-users')) {
-            abort(403);
-        }
+        abort_unless(Gate::allows('manage-users'), 403);
     }
 }
