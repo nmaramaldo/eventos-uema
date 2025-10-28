@@ -7,6 +7,7 @@ use App\Models\Inscricao;
 use App\Policies\EventPolicy;
 use App\Policies\InscricaoPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -18,6 +19,19 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerPolicies();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Definições de permissões (Gates)
+        |--------------------------------------------------------------------------
+        */
+
+        // Permitir acesso d usuário master
+        Gate::define('isAdmin', function ($user) {
+            
+            return in_array($user->tipo, ['master']);
+        });
+
         
     }
 }

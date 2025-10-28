@@ -56,15 +56,16 @@
         </div>
 
         {{-- Card "Relatórios" - Visível apenas para MASTER --}}
-        @can('viewAny', App\Models\User::class)
-            <div class="col-sm-4">
-                <div class="panel panel-default" style="opacity:.7">
+       @can('viewAny', App\Models\User::class)           
+            <div class="col-sm-4">               
+                <a href="{{ route('relatorios.index') }}" class="panel panel-default" style="display:block;text-decoration:none;">
                     <div class="panel-heading"><strong>Relatórios</strong></div>
-                    <div class="panel-body text-muted">Em breve: acesso/uso</div>
-                </div>
+                    <div class="panel-body text-muted">Gerar relatórios de eventos e participantes.</div>
+                </a>
             </div>
         @endcan
-    </div>
-    @endcan
 </div>
+
+@endcan 
+
 @endsection

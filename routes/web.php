@@ -12,6 +12,7 @@ use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\CertificadoController;
 use App\Http\Controllers\PalestranteController;
 use App\Http\Controllers\NotificacaoController;
+use App\Http\Controllers\RelatorioController;
 
 // Admin
 use App\Http\Controllers\Admin\UserAdminController;
@@ -63,7 +64,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->prefix('app')->group(function () {
     Route::get('/', fn() => redirect()->route('eventos.index'))->name('app.home');
 
-    // ✅ “Meus eventos” (organizador/owner) – fora do bloco de can:manage-users
+    // ✅ “Meus eventos” (organizador/owner)
     Route::get('/meus-eventos', [MyEventsController::class, 'index'])->name('meus-eventos.index');
     Route::get('/meus-eventos/{evento}/editar', [MyEventsController::class, 'edit'])->name('meus-eventos.edit');
 
@@ -100,14 +101,13 @@ Route::middleware('auth')->prefix('app')->group(function () {
     // ---- Área do participante/logado ----
     Route::resource('inscricoes',   InscricaoController::class);
     Route::resource('notificacoes', NotificacaoController::class);
-    Route::patch(
-        'notificacoes/{notificacao}/marcar-como-lida',
-        [NotificacaoController::class, 'marcarComoLida']
-    )->name('notificacoes.marcarComoLida');
+
+    Route::patch('notificacoes/{notificacao}/marcar-como-lida', [NotificacaoController::class, 'marcarComoLida'])
+        ->name('notificacoes.marcarComoLida');
 
     Route::delete('/inscricoes/{evento}', [InscricaoController::class, 'destroy'])
-     ->name('inscricoes.cancelar')
-     ->middleware('auth'); // apenas usuários logados
+        ->name('inscricoes.cancelar')
+        ->middleware('auth'); // apenas usuários logados
 
     // Logs de auditoria
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
@@ -130,3 +130,17 @@ Route::middleware(['auth', 'can:manage-users'])
         Route::patch('usuarios/{user}/desativar', [UserAdminController::class, 'desativar'])->name('usuarios.desativar');
         Route::patch('usuarios/{user}/tipo',      [UserAdminController::class, 'alterarTipo'])->name('usuarios.tipo');
     });
+
+/*
+|--------------------------------------------------------------------------
+| RELATÓRIOS (somente Master/Admin)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+   
+    
+    Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');        
+    Route::get('/relatorios/eventos', [RelatorioController::class, 'listaEventos'])->name('relatorios.eventos');    
+    Route::get('/relatorios/eventos/pdf', [RelatorioController::class, 'gerarPdfEventos'])->name('relatorios.eventos.pdf');
+});

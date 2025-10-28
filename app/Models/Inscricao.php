@@ -69,4 +69,10 @@ class Inscricao extends Model
     {
         return $query->where('user_id', $userId);
     }
+
+    public function participante()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
 }
