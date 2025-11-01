@@ -89,7 +89,15 @@ class EventController extends Controller
     public function update(UpdateEventRequest $request, Event $evento)
     {
         $this->authorize('update', $evento);
-        $evento->update($request->validated());
+
+        $data = $request->validated();
+
+        if ($evento->programacao()->count() === 0) {
+            $data['status'] = 'rascunho';
+        }
+
+        $evento->update($data);
+
         return redirect()->route('eventos.show', $evento)->with('success', 'Evento atualizado com sucesso!');
     }
 
