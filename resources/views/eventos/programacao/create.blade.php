@@ -21,7 +21,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('eventos.programacao.store', $evento) }}" method="POST" id="mainForm">
+                    <form id="activityForm">
                         @csrf
 
                         {{-- Formulário para adicionar nova atividade --}}
@@ -72,7 +72,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button type="button" id="add_activity_btn" class="btn btn-secondary mt-3">Adicionar à Lista</button>
+                            <button type="button" id="add_activity_btn" class="btn btn-secondary mt-3">Adicionar e Salvar</button>
                         </div>
 
                         {{-- Lista de atividades --}}
@@ -82,22 +82,14 @@
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ route('eventos.programacao.index', $evento) }}" class="btn btn-outline-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary" id="submitBtn">Salvar Atividades</button>
+                            <a href="{{ route('eventos.programacao.index', $evento) }}" class="btn btn-outline-secondary">Voltar</a>
+                            <a href="{{ route('eventos.index') }}" class="btn btn-primary">Finalizar</a>
                         </div>
                     </form>
 
                     {{-- Template invisível para clonar novas linhas --}}
                     <template id="activity-template">
                         <div class="activity-row border p-3 rounded mb-2 bg-white">
-                            <input type="hidden" name="atividades[INDEX][titulo]">
-                            <input type="hidden" name="atividades[INDEX][descricao]">
-                            <input type="hidden" name="atividades[INDEX][modalidade]">
-                            <input type="hidden" name="atividades[INDEX][data_hora_inicio]">
-                            <input type="hidden" name="atividades[INDEX][data_hora_fim]">
-                            <input type="hidden" name="atividades[INDEX][localidade]">
-                            <input type="hidden" name="atividades[INDEX][capacidade]">
-                            <input type="hidden" name="atividades[INDEX][requer_inscricao]">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <h6 class="mb-1 activity-title"></h6>
@@ -137,8 +129,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('atividades-container');
     const template = document.getElementById('activity-template');
     const noActivitiesText = document.getElementById('no-activities-text');
-    const submitBtn = document.getElementById('submitBtn');
-    let activityIndex = 0;
+    const activityForm = document.getElementById('activityForm');
+    const csrfToken = document.querySelector('input[name="_token"]').value;
 
     const checkEmptyState = () => {
         noActivitiesText.style.display = container.querySelector('.activity-row') ? 'none' : 'block';
@@ -154,45 +146,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     };
 
-    const addActivity = (activityData) => {
+    const addActivityToDOM = (activityData) => {
         const clone = template.content.cloneNode(true);
         const newRow = clone.querySelector('.activity-row');
 
-        // Preenche os inputs hidden
-        const fields = ['titulo', 'descricao', 'modalidade', 'data_hora_inicio', 'data_hora_fim', 'localidade', 'capacidade', 'requer_inscricao'];
-        fields.forEach(field => {
-            const input = newRow.querySelector(`[name="atividades[INDEX][${field}]"]`);
-            if (input) {
-                input.name = `atividades[${activityIndex}][${field}]`;
-                input.value = activityData[field] || '';
-            }
-        });
-        
-        // Preenche o texto visível
         newRow.querySelector('.activity-title').textContent = activityData.titulo;
         newRow.querySelector('.activity-description').textContent = activityData.descricao || 'Sem descrição';
         newRow.querySelector('.activity-modality').textContent = activityData.modalidade;
         newRow.querySelector('.activity-location').textContent = activityData.localidade;
         newRow.querySelector('.activity-time-start').textContent = formatDate(activityData.data_hora_inicio);
         newRow.querySelector('.activity-time-end').textContent = formatDate(activityData.data_hora_fim);
-        
-        // Mostra capacidade se existir
+
         if (activityData.capacidade) {
             newRow.querySelector('.activity-capacity').textContent = activityData.capacidade;
             newRow.querySelector('.activity-capacity-container').style.display = 'inline';
         }
-        
-        // Mostra requer inscrição se marcado
+
         if (activityData.requer_inscricao) {
             newRow.querySelector('.activity-inscricao-container').style.display = 'inline';
         }
-        
+
         container.appendChild(newRow);
-        activityIndex++;
         checkEmptyState();
     };
 
-    addBtn.addEventListener('click', function () {
+    addBtn.addEventListener('click', async function () {
         const newActivityData = {
             titulo: document.getElementById('new_titulo').value.trim(),
             descricao: document.getElementById('new_descricao').value.trim(),
@@ -205,71 +183,63 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         // Validações
-        if (!newActivityData.titulo) {
-            alert('Preencha o título da atividade.');
-            document.getElementById('new_titulo').focus();
-            return;
-        }
-        if (!newActivityData.modalidade) {
-            alert('Selecione a modalidade.');
-            document.getElementById('new_modalidade').focus();
-            return;
-        }
-        if (!newActivityData.data_hora_inicio) {
-            alert('Informe a data e hora de início.');
-            document.getElementById('new_data_hora_inicio').focus();
-            return;
-        }
-        if (!newActivityData.data_hora_fim) {
-            alert('Informe a data e hora de fim.');
-            document.getElementById('new_data_hora_fim').focus();
-            return;
-        }
-        if (!newActivityData.localidade) {
-            alert('Informe o local.');
-            document.getElementById('new_localidade').focus();
+        if (!newActivityData.titulo || !newActivityData.modalidade || !newActivityData.data_hora_inicio || !newActivityData.data_hora_fim || !newActivityData.localidade) {
+            alert('Preencha todos os campos obrigatórios (*).');
             return;
         }
 
-        // Validação de datas
         if (new Date(newActivityData.data_hora_fim) <= new Date(newActivityData.data_hora_inicio)) {
             alert('A data de fim deve ser posterior à data de início.');
             return;
         }
 
-        addActivity(newActivityData);
+        addBtn.disabled = true;
+        addBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Salvando...';
 
-        // Limpa os campos
-        document.getElementById('new_titulo').value = '';
-        document.getElementById('new_descricao').value = '';
-        document.getElementById('new_modalidade').value = '';
-        document.getElementById('new_data_hora_inicio').value = '';
-        document.getElementById('new_data_hora_fim').value = '';
-        document.getElementById('new_localidade').value = '';
-        document.getElementById('new_capacidade').value = '';
-        document.getElementById('new_requer_inscricao').checked = false;
+        try {
+            const response = await fetch('{{ route("eventos.programacao.store.ajax", $evento) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ atividades: [newActivityData] })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    addActivityToDOM(result.atividade);
+                    // Limpa os campos do formulário
+                    document.getElementById('new_titulo').value = '';
+                    document.getElementById('new_descricao').value = '';
+                    document.getElementById('new_modalidade').value = '';
+                    document.getElementById('new_data_hora_inicio').value = '';
+                    document.getElementById('new_data_hora_fim').value = '';
+                    document.getElementById('new_localidade').value = '';
+                    document.getElementById('new_capacidade').value = '';
+                    document.getElementById('new_requer_inscricao').checked = false;
+                } else {
+                    alert('Ocorreu um erro ao salvar a atividade.');
+                }
+            } else {
+                alert('Erro de comunicação com o servidor.');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Ocorreu um erro inesperado.');
+        } finally {
+            addBtn.disabled = false;
+            addBtn.innerHTML = 'Adicionar e Salvar';
+        }
     });
 
     container.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('remove-activity-btn')) {
+            // Futuramente, adicionar uma chamada AJAX para remover a atividade do banco de dados
             e.target.closest('.activity-row').remove();
             checkEmptyState();
         }
-    });
-
-    // Validação antes de enviar
-    document.getElementById('mainForm').addEventListener('submit', function(e) {
-        const hasActivities = container.querySelector('.activity-row');
-        
-        if (!hasActivities) {
-            e.preventDefault();
-            alert('Adicione pelo menos uma atividade antes de salvar.');
-            return;
-        }
-
-        // Mostrar loading
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Salvando...';
     });
 
     checkEmptyState();

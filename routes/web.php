@@ -75,6 +75,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
         Route::resource('eventos', EventController::class);
 
         // Programação
+        Route::post('eventos/{evento}/programacao/store-ajax', [ProgramacaoController::class, 'storeAjaxForEvent'])->name('eventos.programacao.store.ajax');
         Route::get('eventos/{evento}/programacao', [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
         Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
         Route::post('eventos/{evento}/programacao', [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');

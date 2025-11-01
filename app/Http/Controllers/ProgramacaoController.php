@@ -35,6 +35,19 @@ class ProgramacaoController extends Controller
         ]);
     }
 
+    public function storeAjaxForEvent(StoreAjaxProgramacaoRequest $request, Event $evento)
+    {
+        $this->authorizeManage();
+
+        $atividadeData = $request->validated();
+        $atividadeData['evento_id'] = $evento->id;
+        $atividadeData['requer_inscricao'] = !empty($atividadeData['requer_inscricao']);
+
+        $atividade = Programacao::create($atividadeData);
+
+        return response()->json(['success' => true, 'atividade' => $atividade]);
+    }
+
     public function storeForEvent(StoreProgramacaoRequest $request, Event $evento)
     {
         $this->authorizeManage();
