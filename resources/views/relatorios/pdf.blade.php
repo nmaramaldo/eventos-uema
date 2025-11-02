@@ -62,24 +62,31 @@
     <table>
         <thead>
             <tr>
-                <th>Título</th>
-                <th>Data</th>                
+                <th>Evento</th>
+                <th>Status</th>
+                <th>Período</th>
                 <th>Inscritos</th>
+                <th>Tipo</th>
+                <th>Classificação</th>
+                <th>Área Temática</th>
             </tr>
         </thead>
        <tbody>
-            @foreach ($eventos as $evento)
+            @forelse ($eventos as $evento)
                 <tr>
-                    {{-- CORRIGIDO: de 'titulo' para 'nome' --}}
                     <td>{{ $evento->nome }}</td>
-
-                    {{-- CORRIGIDO: de 'data' para 'data_inicio_evento' --}}
-                    <td>{{ $evento->data_inicio_evento->format('d/m/Y') }}</td>
-                    
-                    {{-- CORRIGIDO: usando o resultado eficiente do withCount --}}
+                    <td>{{ ucfirst($evento->status) }}</td>
+                    <td>{{ $evento->data_inicio_evento->format('d/m/Y') }} - {{ $evento->data_fim_evento->format('d/m/Y') }}</td>
                     <td>{{ $evento->inscricoes_count }}</td>
+                    <td>{{ $evento->tipo_evento }}</td>
+                    <td>{{ $evento->tipo_classificacao }}</td>
+                    <td>{{ $evento->area_tematica }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="7" style="text-align: center;">Nenhum evento encontrado.</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 
