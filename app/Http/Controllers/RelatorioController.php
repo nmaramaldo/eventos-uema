@@ -3,95 +3,91 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class RelatorioController extends Controller
 {
+    
     /**
-     * Mostra o menu principal de relatórios.
-     * Carrega a view: relatorios/index.blade.php
+     * Exibe a lista principal de relatórios.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('relatorios.index');
-    }
+        $this->authorize('viewAny', Event::class); // Protege a rota
 
-    /**
-     * Mostra a lista de todos os eventos em uma tabela.
-     * Carrega a view: relatorios/eventos.blade.php
-     */
-    public function listaEventos(Request $request)
-    {
-        $query = Event::withCount('inscricoes')->orderBy('data_inicio_evento', 'desc');
+        // ✅ FILTROS SIMPLIFICADOS
+        $filtros = $request->only([
+            'nome_evento', 'data_inicio', 'data_fim'
+        ]);
 
-        // Filtros
-        if ($request->filled('q')) {
-            $query->where('nome', 'like', '%' . $request->input('q') . '%');
+        // Inicia a consulta ao banco
+        $query = Event::query();
+
+        // 1. Filtro por Nome do Evento
+        if ($request->filled('nome_evento')) {
+            $query->where('nome', 'like', '%' . $request->input('nome_evento') . '%');
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('tipo_evento')) {
-            $query->where('tipo_evento', $request->input('tipo_evento'));
-        }
-
-        if ($request->filled('area_tematica')) {
-            $query->where('area_tematica', $request->input('area_tematica'));
-        }
-
+        // 2. Filtro por Data de Início (a partir de)
         if ($request->filled('data_inicio')) {
             $query->where('data_inicio_evento', '>=', $request->input('data_inicio'));
         }
-
-        if ($request->filled('data_fim')) {
-            $query->where('data_fim_evento', '<=', $request->input('data_fim'));
-        }
-
-        $eventos = $query->get();
-
-        return view('relatorios.eventos', compact('eventos'));
-    }
-
-    /**
-     * Gera um PDF com a lista de todos os eventos.
-     * Carrega a view: relatorios/pdf.blade.php
-     */
-    public function gerarPdfEventos(Request $request)
-    {
-        $query = Event::withCount('inscricoes')->orderBy('data_inicio_evento', 'desc');
-
-        // Filtros
-        if ($request->filled('q')) {
-            $query->where('nome', 'like', '%' . $request->input('q') . '%');
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('tipo_evento')) {
-            $query->where('tipo_evento', $request->input('tipo_evento'));
-        }
-
-        if ($request->filled('area_tematica')) {
-            $query->where('area_tematica', $request->input('area_tematica'));
-        }
-
-        if ($request->filled('data_inicio')) {
-            $query->where('data_inicio_evento', '>=', $request->input('data_inicio'));
-        }
-
-        if ($request->filled('data_fim')) {
-            $query->where('data_fim_evento', '<=', $request->input('data_fim'));
-        }
-
-        $eventos = $query->get();
-
-        $pdf = PDF::loadView('relatorios.pdf', compact('eventos'));
         
-        return $pdf->stream('relatorio-geral-eventos-uema.pdf');
+        // 3. Filtro por Data de Fim (até)
+        if ($request->filled('data_fim')) {
+            $query->where('data_fim_evento', '<=', $request->input('data_fim'));
+        }
+
+        // Executa a consulta, ordena e pagina
+        $eventos = $query->orderBy('data_inicio_evento', 'desc')
+                         ->paginate(20)
+                         ->withQueryString(); // Mantém os filtros na paginação
+
+        // Não precisamos mais das 'opcoes' de dropdown
+        return view('relatorios.index', compact('eventos', 'filtros'));
+    }
+
+    /**
+     * ✅ NOVO MÉTODO
+     * Exibe o relatório detalhado de um evento específico.
+     */
+    public function showEvento(Event $evento)
+    {
+        // Autoriza o usuário (ex: apenas admins podem ver relatórios)
+        $this->authorize('viewAny', Event::class); 
+
+        // Carrega o evento com suas inscrições E os dados dos usuários inscritos
+        $evento->load('inscricoes.user');
+
+        // Pega a coleção de inscrições (que agora contêm os dados do usuário)
+        $participantes = $evento->inscricoes;
+
+        return view('relatorios.evento-show', compact('evento', 'participantes'));
+    }
+
+    public function exportarPDF(Event $evento)
+    {
+        // Autoriza o usuário
+        $this->authorize('viewAny', Event::class); 
+
+        // Carrega os mesmos dados da página de detalhes
+        $evento->load('inscricoes.user');
+        $participantes = $evento->inscricoes;
+
+        // Prepara os dados para a view
+        $data = [
+            'evento' => $evento,
+            'participantes' => $participantes
+        ];
+
+        // Carrega a view do PDF que acabamos de criar
+        $pdf = Pdf::loadView('relatorios.evento-pdf', $data);
+        
+        // Define o nome do arquivo para download
+        $fileName = 'relatorio_' . \Illuminate\Support\Str::slug($evento->nome) . '.pdf';
+
+        // Força o download do PDF no navegador
+        return $pdf->download($fileName);
     }
 }

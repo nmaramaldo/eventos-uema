@@ -143,5 +143,6 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     
     Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');        
     Route::get('/relatorios/eventos', [RelatorioController::class, 'listaEventos'])->name('relatorios.eventos');    
-    Route::get('/relatorios/eventos/pdf', [RelatorioController::class, 'gerarPdfEventos'])->name('relatorios.eventos.pdf');
+    Route::get('/relatorios/eventos/{evento}', [RelatorioController::class, 'showEvento'])->name('relatorios.evento.show');
+    Route::get('/relatorios/eventos/{evento}/pdf', [RelatorioController::class, 'exportarPDF'])->name('relatorios.evento.pdf');
 });
