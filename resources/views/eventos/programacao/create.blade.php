@@ -113,6 +113,7 @@
                                         </span>
                                     </div>
                                 </div>
+                                <button type="button" class="btn btn-sm btn-primary edit-activity-btn me-1">Editar</button>
                                 <button type="button" class="btn btn-sm btn-danger remove-activity-btn ms-2">×</button>
                             </div>
                         </div>
@@ -131,9 +132,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const template = document.getElementById('activity-template');
     const noActivitiesText = document.getElementById('no-activities-text');
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const form = document.getElementById('activityForm');
+    const hiddenIdInput = document.createElement('input');
+    hiddenIdInput.type = 'hidden';
+    hiddenIdInput.id = 'editing_activity_id';
+    form.appendChild(hiddenIdInput);
+
+    let activities = [];
 
     const checkEmptyState = () => {
-        noActivitiesText.style.display = container.querySelector('.activity-row') ? 'none' : 'block';
+        noActivitiesText.style.display = activities.length === 0 ? 'block' : 'none';
     };
 
     const formatDate = (dateString) => {
@@ -146,46 +154,49 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     };
 
-    const addActivityToDOM = (atividade, fallback) => {
-        const clone = template.content.cloneNode(true);
-        const row = clone.querySelector('.activity-row');
+    const formatToDateTimeLocal = (dateString) => {
+        if (!dateString) return '';
+        const d = new Date(dateString);
+        if (Number.isNaN(d.getTime())) return '';
+        const pad = (num) => num.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
 
-        // Preferir dados do servidor; cair para os do formulário se faltar algo
-        const titulo   = atividade?.titulo ?? fallback?.titulo ?? '';
-        const desc     = atividade?.descricao ?? fallback?.descricao ?? 'Sem descrição';
-        const mod      = atividade?.modalidade ?? fallback?.modalidade ?? '';
-        const inicio   = atividade?.data_hora_inicio ?? fallback?.data_hora_inicio ?? '';
-        const fim      = atividade?.data_hora_fim ?? fallback?.data_hora_fim ?? '';
-        const vagas    = atividade?.vagas ?? atividade?.capacidade ?? fallback?.capacidade ?? null;
-        const localTxt = (atividade?.local && atividade.local.nome)
-                       ? atividade.local.nome
-                       : (fallback?.localidade ?? '');
+    const renderActivities = () => {
+        container.innerHTML = '';
+        activities.forEach(activity => {
+            const clone = template.content.cloneNode(true);
+            const row = clone.querySelector('.activity-row');
+            row.dataset.activityId = activity.id;
 
-        row.querySelector('.activity-title').textContent = titulo;
-        row.querySelector('.activity-description').textContent = desc || 'Sem descrição';
-        row.querySelector('.activity-modality').textContent = mod || '—';
-        row.querySelector('.activity-location').textContent = localTxt || '—';
-        row.querySelector('.activity-time-start').textContent = formatDate(inicio);
-        row.querySelector('.activity-time-end').textContent = formatDate(fim);
+            row.querySelector('.activity-title').textContent = activity.titulo;
+            row.querySelector('.activity-description').textContent = activity.descricao || 'Sem descrição';
+            row.querySelector('.activity-modality').textContent = activity.modalidade || '—';
+            row.querySelector('.activity-location').textContent = (activity.local && activity.local.nome) ? activity.local.nome : (activity.localidade || '—');
+            row.querySelector('.activity-time-start').textContent = formatDate(activity.data_hora_inicio);
+            row.querySelector('.activity-time-end').textContent = formatDate(activity.data_hora_fim);
 
-        if (vagas) {
-            row.querySelector('.activity-capacity').textContent = vagas;
-            row.querySelector('.activity-capacity-container').style.display = 'inline';
-        }
-        if (atividade?.requer_inscricao || fallback?.requer_inscricao) {
-            row.querySelector('.activity-inscricao-container').style.display = 'inline';
-        }
+            const vagas = activity.vagas ?? activity.capacidade ?? null;
+            if (vagas) {
+                row.querySelector('.activity-capacity').textContent = vagas;
+                row.querySelector('.activity-capacity-container').style.display = 'inline';
+            }
+            if (activity.requer_inscricao) {
+                row.querySelector('.activity-inscricao-container').style.display = 'inline';
+            }
 
-        container.appendChild(row);
+            container.appendChild(row);
+        });
         checkEmptyState();
     };
 
     addBtn.addEventListener('click', async function () {
+        const editingId = document.getElementById('editing_activity_id').value;
         const payload = {
+            id: editingId || null,
             titulo: document.getElementById('new_titulo').value.trim(),
             descricao: document.getElementById('new_descricao').value.trim(),
             modalidade: document.getElementById('new_modalidade').value,
-            // datetime-local -> "YYYY-MM-DDTHH:MM" (backend já trata)
             data_hora_inicio: document.getElementById('new_data_hora_inicio').value,
             data_hora_fim: document.getElementById('new_data_hora_fim').value,
             localidade: document.getElementById('new_localidade').value.trim(),
@@ -193,7 +204,6 @@ document.addEventListener('DOMContentLoaded', function () {
             requer_inscricao: document.getElementById('new_requer_inscricao').checked ? 1 : 0,
         };
 
-        // Validações rápidas no cliente
         if (!payload.titulo || !payload.modalidade || !payload.data_hora_inicio || !payload.data_hora_fim || !payload.localidade) {
             alert('Preencha todos os campos obrigatórios (*).');
             return;
@@ -204,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         addBtn.disabled = true;
-        addBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Salvando...';
+        addBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> Salvando...`;
 
         try {
             const resp = await fetch('{{ route("eventos.programacao.store.ajax", $evento) }}', {
@@ -214,37 +224,33 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                // enviar os campos "flat"
                 body: JSON.stringify(payload)
             });
 
-            let data;
-            try { data = await resp.json(); } catch (_) { data = null; }
+            const data = await resp.json();
 
             if (!resp.ok) {
-                if (resp.status === 422 && data && data.errors) {
-                    const first = Object.values(data.errors)[0][0] || 'Erros de validação.';
-                    alert(first);
-                } else if (data && data.message) {
-                    alert(data.message);
+                if (resp.status === 422 && data.errors) {
+                    alert(Object.values(data.errors)[0][0]);
                 } else {
-                    alert(`Erro de comunicação com o servidor. (${resp.status})`);
+                    alert(data.message || `Erro de comunicação com o servidor. (${resp.status})`);
                 }
                 return;
             }
 
-            if (data && data.success) {
-                addActivityToDOM(data.atividade, payload);
-
-                // Limpar formulário
-                document.getElementById('new_titulo').value = '';
-                document.getElementById('new_descricao').value = '';
-                document.getElementById('new_modalidade').value = '';
-                document.getElementById('new_data_hora_inicio').value = '';
-                document.getElementById('new_data_hora_fim').value = '';
-                document.getElementById('new_localidade').value = '';
-                document.getElementById('new_capacidade').value = '';
-                document.getElementById('new_requer_inscricao').checked = false;
+            if (data.success) {
+                if (editingId) {
+                    const index = activities.findIndex(a => a.id == editingId);
+                    if (index > -1) {
+                        activities[index] = data.atividade;
+                    }
+                } else {
+                    activities.push(data.atividade);
+                }
+                renderActivities();
+                form.reset();
+                hiddenIdInput.value = '';
+                addBtn.textContent = 'Adicionar e Salvar';
             } else {
                 alert('Ocorreu um erro ao salvar a atividade.');
             }
@@ -258,9 +264,35 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     container.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-activity-btn')) {
-            e.target.closest('.activity-row').remove();
-            checkEmptyState();
+        const editBtn = e.target.closest('.edit-activity-btn');
+        if (editBtn) {
+            const row = editBtn.closest('.activity-row');
+            const activityId = row.dataset.activityId;
+            const activity = activities.find(a => a.id == activityId);
+
+            if (activity) {
+                hiddenIdInput.value = activity.id;
+                document.getElementById('new_titulo').value = activity.titulo;
+                document.getElementById('new_descricao').value = activity.descricao;
+                document.getElementById('new_modalidade').value = activity.modalidade;
+                document.getElementById('new_data_hora_inicio').value = formatToDateTimeLocal(activity.data_hora_inicio);
+                document.getElementById('new_data_hora_fim').value = formatToDateTimeLocal(activity.data_hora_fim);
+                document.getElementById('new_localidade').value = activity.local ? activity.local.nome : activity.localidade;
+                document.getElementById('new_capacidade').value = activity.capacidade;
+                document.getElementById('new_requer_inscricao').checked = activity.requer_inscricao;
+
+                addBtn.textContent = 'Atualizar Atividade';
+                window.scrollTo(0, 0);
+            }
+        }
+
+        const removeBtn = e.target.closest('.remove-activity-btn');
+        if (removeBtn) {
+            const row = removeBtn.closest('.activity-row');
+            const activityId = row.dataset.activityId;
+            // Here you should also send a request to the server to delete the activity
+            activities = activities.filter(a => a.id != activityId);
+            renderActivities();
         }
     });
 

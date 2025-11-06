@@ -48,6 +48,7 @@ class StoreAjaxProgramacaoRequest extends FormRequest
         }
 
         $this->merge([
+            'id'               => $this->input('id'),
             'data_hora_inicio' => $parseDate($inicio),
             'data_hora_fim'    => $parseDate($fim),
             'capacidade'       => $this->input('capacidade', $this->input('vagas')),
@@ -60,6 +61,7 @@ class StoreAjaxProgramacaoRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id'                => 'nullable|integer|exists:programacao,id',
             'titulo'            => 'required|string|max:255',
             'descricao'         => 'nullable|string',
             'data_hora_inicio'  => 'required|date',

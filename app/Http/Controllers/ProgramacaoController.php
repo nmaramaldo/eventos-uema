@@ -61,7 +61,8 @@ class ProgramacaoController extends Controller
 
             DB::beginTransaction();
 
-            $a = new Programacao();
+            // Se o ID for fornecido, atualiza. Senão, cria.
+            $a = Programacao::findOrNew($data['id'] ?? null);
 
             if (Schema::hasColumn('programacao', 'evento_id'))        $a->evento_id        = $evento->id;
             if (Schema::hasColumn('programacao', 'titulo'))           $a->titulo           = $data['titulo'];
