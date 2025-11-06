@@ -7,15 +7,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Concerns\HasUuids; // <-- Importa o Trait de UUID
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Programacao extends Model
 {
-    use HasFactory, HasUuids; // ✅ USA O TRAIT DE UUIDS
+    use HasFactory, HasUuids;
 
     protected $table = 'programacao';
 
-    
+    // ✅ UUID como chave primária
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'evento_id',
@@ -27,23 +30,21 @@ class Programacao extends Model
         'localidade',
         'capacidade',
         'requer_inscricao',
-        'local_id', 
+        'local_id',
     ];
 
     protected $casts = [
-        'capacidade' => 'integer',
-        'requer_inscricao' => 'boolean',        
-        'data_hora_inicio' => 'datetime',
-        'data_hora_fim' => 'datetime',
+        'capacidade'        => 'integer',
+        'requer_inscricao'  => 'boolean',
+        'data_hora_inicio'  => 'datetime',
+        'data_hora_fim'     => 'datetime',
     ];
 
     protected $attributes = [
         'requer_inscricao' => false,
     ];
 
-    
     // --- RELACIONAMENTOS ---
-
     public function evento(): BelongsTo
     {
         return $this->belongsTo(Event::class, 'evento_id');
@@ -65,21 +66,16 @@ class Programacao extends Model
     }
 
     // --- ESCOPOS ---
-
     public function scopeOrdenado($query)
     {
-        
         return $query->orderBy('data_hora_inicio');
     }
 
     // --- ACESSORS ---
-
-    
     public function getPeriodoAttribute(): string
     {
         $ini = $this->data_hora_inicio ? $this->data_hora_inicio->format('d/m/Y H:i') : '—';
         $fim = $this->data_hora_fim ? $this->data_hora_fim->format('d/m/Y H:i') : '—';
         return "{$ini} — {$fim}";
     }
-    
 }

@@ -117,7 +117,7 @@
                 // suporta tanto logomarca_path (Storage) quanto logomarca_url
                 $thumb = null;
                 if (!empty($e->logomarca_path)) {
-                  $thumb = Storage::url($e->logomarca_path);
+                  $thumb = \Illuminate\Support\Facades\Storage::url($e->logomarca_path);
                 } elseif (!empty($e->logomarca_url)) {
                   $thumb = $e->logomarca_url;
                 }
@@ -133,12 +133,14 @@
               <h4 class="card-title mb-1 text-dark" style="margin-top:0">{{ $e->nome }}</h4>
               <p class="text-muted small mb-2" style="min-height:18px">{{ $e->periodo_evento }}</p>
 
-              {{-- badge de status igual ao Home --}}
+              {{-- badge de status (usa partial se existir; senão usa status_exibicao) --}}
               <div class="mb-2">
                 @if(View::exists('front.partials.event-badge'))
                   @include('front.partials.event-badge', ['ev' => $e])
                 @else
-                  <span class="badge bg-primary badge-status">{{ $e->status ?? '—' }}</span>
+                  <span class="badge bg-primary badge-status">
+                    {{ $e->status_exibicao ?? ucfirst($e->status ?? '—') }}
+                  </span>
                 @endif
               </div>
 
