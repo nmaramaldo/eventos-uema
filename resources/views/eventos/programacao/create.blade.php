@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
     form.appendChild(hiddenIdInput);
 
     let activities = [];
+    let isSaving = false;
 
     const checkEmptyState = () => {
         noActivitiesText.style.display = activities.length === 0 ? 'block' : 'none';
@@ -190,7 +191,9 @@ document.addEventListener('DOMContentLoaded', function () {
         checkEmptyState();
     };
 
-    addBtn.addEventListener('click', async function () {
+    const saveActivity = async () => {
+        if (isSaving) return;
+
         const editingId = document.getElementById('editing_activity_id').value;
         const payload = {
             id: editingId || null,
@@ -204,15 +207,18 @@ document.addEventListener('DOMContentLoaded', function () {
             requer_inscricao: document.getElementById('new_requer_inscricao').checked ? 1 : 0,
         };
 
-        if (!payload.titulo || !payload.modalidade || !payload.data_hora_inicio || !payload.data_hora_fim || !payload.localidade) {
-            alert('Preencha todos os campos obrigatórios (*).');
-            return;
-        }
-        if (new Date(payload.data_hora_fim) <= new Date(payload.data_hora_inicio)) {
-            alert('A data de fim deve ser posterior à data de início.');
+        const requiredFields = ['titulo', 'modalidade', 'data_hora_inicio', 'data_hora_fim', 'localidade'];
+        const allFilled = requiredFields.every(field => payload[field]);
+
+        if (!allFilled) {
             return;
         }
 
+        if (new Date(payload.data_hora_fim) <= new Date(payload.data_hora_inicio)) {
+            return;
+        }
+
+        isSaving = true;
         addBtn.disabled = true;
         addBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> Salvando...`;
 
@@ -258,9 +264,18 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error(err);
             alert('Erro de comunicação com o servidor.');
         } finally {
+            isSaving = false;
             addBtn.disabled = false;
             addBtn.innerHTML = 'Adicionar e Salvar';
         }
+    };
+
+    addBtn.addEventListener('click', saveActivity);
+
+    const requiredFieldsIds = ['new_titulo', 'new_modalidade', 'new_data_hora_inicio', 'new_data_hora_fim', 'new_localidade'];
+    requiredFieldsIds.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        field.addEventListener('blur', saveActivity);
     });
 
     container.addEventListener('click', function(e) {
