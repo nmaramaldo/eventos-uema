@@ -93,6 +93,8 @@ class EventController extends Controller
     {
         $this->authorize('update', $evento);
 
+        $evento->load('programacao'); // Load the programacao relationship
+
         $data = $request->validated();
 
         // Atualiza todos os campos EXCETO status primeiro
@@ -124,6 +126,14 @@ class EventController extends Controller
 
         // --- FORÇA a escrita do status diretamente no banco, por último ---
         if (in_array($statusRaw, ['publicado', 'rascunho', 'ativo'], true)) {
+            // Se o evento não tiver programação, ele não pode ser publicado.
+            // Força o status para 'rascunho' se tentar publicar sem programação.
+            if ($statusRaw === 'publicado' && $evento->programacao->isEmpty()) {
+                $statusRaw = 'rascunho';
+                // Opcional: Adicionar uma mensagem de erro ou aviso ao usuário
+                // session()->flash('error', 'Não é possível publicar um evento sem programação. O status foi alterado para rascunho.');
+            }
+
             // se seu ENUM não aceitar 'ativo', o model vai manter como 'publicado'/'rascunho' conforme veio
             DB::table('eventos')
                 ->where('id', $evento->id)
