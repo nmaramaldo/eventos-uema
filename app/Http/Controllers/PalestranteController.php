@@ -36,16 +36,25 @@ class PalestranteController extends Controller
         $palestrantesBefore = $evento->palestrantes()->exists();
 
         foreach ($data as $i => $palestranteData) {
-            // cria/encontra
-            $palestrante = Palestrante::firstOrCreate(
-                !empty($palestranteData['email'])
-                    ? ['email' => $palestranteData['email']]
-                    : ['nome'  => $palestranteData['nome']],
-                [
-                    'nome'      => $palestranteData['nome'] ?? null,
+            if (empty($palestranteData['nome'])) {
+                continue; // Pula se o nome estiver vazio
+            }
+
+            if (!empty($palestranteData['email'])) {
+                $palestrante = Palestrante::updateOrCreate(
+                    ['email' => $palestranteData['email']],
+                    [
+                        'nome'      => $palestranteData['nome'],
+                        'biografia' => $palestranteData['biografia'] ?? null,
+                    ]
+                );
+            } else {
+                $palestrante = Palestrante::create([
+                    'nome'      => $palestranteData['nome'],
+                    'email'     => null,
                     'biografia' => $palestranteData['biografia'] ?? null,
-                ]
-            );
+                ]);
+            }
 
             // upload da foto deste índice
             if ($request->hasFile("palestrantes.$i.foto")) {
