@@ -9,12 +9,17 @@ class FrontController extends Controller
 {
     public function home()
     {
+        // ✅ Somente eventos publicados/ativos nos destaques
         $destaques = Event::whereIn('status', ['ativo', 'publicado'])
             ->orderBy('data_inicio_evento', 'asc')
             ->take(8)
             ->get();
 
-        $recentes = Event::latest('created_at')->take(12)->get();
+        // ✅ "Recentes" também deve respeitar o status, senão aparece rascunho
+        $recentes = Event::whereIn('status', ['ativo', 'publicado'])
+            ->latest('created_at')
+            ->take(12)
+            ->get();
 
         // Mesmas áreas do passo de criação (create-step-1)
         $areas = [
@@ -45,6 +50,7 @@ class FrontController extends Controller
 
     public function eventos(Request $request)
     {
+        // ✅ filtra somente status público
         $q = Event::query()->whereIn('status', ['ativo', 'publicado']);
 
         $search = trim((string) ($request->query('s') ?? $request->query('q') ?? ''));
@@ -80,12 +86,15 @@ class FrontController extends Controller
 
     public function show(Event $evento)
     {
+        // (Opcional) se quiser ocultar rascunho do público:
+        // if (!in_array($evento->status, ['ativo', 'publicado'], true)) abort(404);
+
         $evento->load([
             'coordenador',
             'inscricoes',
             'palestrantes',
             'programacao' => fn ($q) => $q->ordenado(),
-            'programacao.palestrantes', // <— necessário p/ chips nas atividades
+            'programacao.palestrantes',
         ]);
 
         $relacionados = Event::where('id', '!=', $evento->id)

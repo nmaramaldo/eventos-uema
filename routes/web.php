@@ -28,10 +28,8 @@ use App\Http\Controllers\MyEventsController;
 |--------------------------------------------------------------------------
 */
 
-// Home pública
 Route::get('/', [FrontController::class, 'home'])->name('front.home');
 
-// Listagem e detalhe públicos de eventos
 Route::prefix('eventos')->name('front.eventos.')->group(function () {
     Route::get('/', [FrontController::class, 'index'])->name('index');
     Route::get('/{evento}', [FrontController::class, 'show'])->name('show');
@@ -64,26 +62,16 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->prefix('app')->group(function () {
     Route::get('/', fn() => redirect()->route('eventos.index'))->name('app.home');
 
-    // ✅ “Meus eventos” (organizador/owner)
+    // “Meus eventos”
     Route::get('/meus-eventos', [MyEventsController::class, 'index'])->name('meus-eventos.index');
     Route::get('/meus-eventos/{evento}/editar', [MyEventsController::class, 'edit'])->name('meus-eventos.edit');
 
     // ---- Administrativo (admin/master) ----
     Route::middleware('can:manage-users')->group(function () {
-
-        // Eventos
+        // Eventos (admin)
         Route::resource('eventos', EventController::class);
 
-        // Programação
-        Route::post('eventos/{evento}/programacao/store-ajax', [ProgramacaoController::class, 'storeAjaxForEvent'])->name('eventos.programacao.store.ajax');
-        Route::get('eventos/{evento}/programacao', [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
-        Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
-        Route::post('eventos/{evento}/programacao', [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');
-        Route::get('eventos/{evento}/programacao/{atividade}/edit', [ProgramacaoController::class, 'editByEvent'])->name('eventos.programacao.edit');
-        Route::put('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'updateByEvent'])->name('eventos.programacao.update');
-        Route::delete('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'destroyByEvent'])->name('eventos.programacao.destroy');
-
-        // Palestrantes
+        // Palestrantes (admin)
         Route::prefix('eventos/{evento}/palestrantes')->group(function () {
             Route::get('/', [PalestranteController::class, 'indexByEvent'])->name('eventos.palestrantes.index');
             Route::get('/create', [PalestranteController::class, 'createByEvent'])->name('eventos.palestrantes.create');
@@ -99,6 +87,15 @@ Route::middleware('auth')->prefix('app')->group(function () {
         Route::resource('certificados', CertificadoController::class);
     });
 
+    // ---- Programação (somente usuários autenticados; filtro real no controller: Admin/Master) ----
+    Route::post('eventos/{evento}/programacao/store-ajax', [ProgramacaoController::class, 'storeAjaxForEvent'])->name('eventos.programacao.store.ajax');
+    Route::get('eventos/{evento}/programacao', [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
+    Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
+    Route::post('eventos/{evento}/programacao', [ProgramacaoController::class, 'storeForEvent'])->name('eventos.programacao.store');
+    Route::get('eventos/{evento}/programacao/{atividade}/edit', [ProgramacaoController::class, 'editByEvent'])->name('eventos.programacao.edit');
+    Route::put('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'updateByEvent'])->name('eventos.programacao.update');
+    Route::delete('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'destroyByEvent'])->name('eventos.programacao.destroy');
+
     // ---- Área do participante/logado ----
     Route::resource('inscricoes',   InscricaoController::class);
     Route::resource('notificacoes', NotificacaoController::class);
@@ -108,7 +105,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
 
     Route::delete('/inscricoes/{evento}', [InscricaoController::class, 'destroy'])
         ->name('inscricoes.cancelar')
-        ->middleware('auth'); // apenas usuários logados
+        ->middleware('auth');
 
     // Logs de auditoria
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
@@ -137,10 +134,7 @@ Route::middleware(['auth', 'can:manage-users'])
 | RELATÓRIOS (somente Master/Admin)
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth'])->prefix('admin')->group(function () {
-   
-    
     Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');        
     Route::get('/relatorios/eventos', [RelatorioController::class, 'listaEventos'])->name('relatorios.eventos');    
     Route::get('/relatorios/eventos/{evento}', [RelatorioController::class, 'showEvento'])->name('relatorios.evento.show');

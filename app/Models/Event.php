@@ -23,7 +23,7 @@ class Event extends Model
 
     protected $fillable = [
         'coordenador_id',
-        'owner_id',              // ✅ novo: dono do evento
+        'owner_id',
         'nome',
         'descricao',
         'tipo_classificacao',
@@ -46,6 +46,28 @@ class Event extends Model
         'vagas'                 => 'integer',
     ];
 
+    /**
+     * Normaliza o status ao atribuir:
+     * - Ignora nulo/vazio (não altera o que já estava)
+     * - Converte para minúsculo e trim
+     * - Aceita exatamente: rascunho | ativo | publicado
+     * - Valor inválido: não altera
+     */
+    public function setStatusAttribute($value): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        $v = is_string($value) ? strtolower(trim($value)) : $value;
+
+        if (!in_array($v, ['rascunho', 'ativo', 'publicado'], true)) {
+            return;
+        }
+
+        $this->attributes['status'] = $v;
+    }
+
     /* =========================
      * Relacionamentos
      * ========================= */
@@ -66,7 +88,7 @@ class Event extends Model
         return $this->belongsTo(User::class, 'coordenador_id', 'id');
     }
 
-    public function owner(): BelongsTo       // ✅ novo
+    public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id', 'id');
     }
@@ -135,17 +157,14 @@ class Event extends Model
     /** Status “humano” para exibição na lista */
     public function getStatusExibicaoAttribute(): string
     {
-        // rascunho/inativo se não estiver ativo/publicado
         if (!$this->isAtivo()) {
             return ucfirst($this->status ?? 'Rascunho');
         }
 
-        // evento terminou
         if ($this->isEncerrado()) {
             return 'Encerrado';
         }
 
-        // janela de inscrições
         if ($this->inscricoesAbertas()) {
             return 'Aberto';
         }
@@ -158,7 +177,6 @@ class Event extends Model
             return 'Inscrições encerradas';
         }
 
-        // fallback
         return 'Publicado';
     }
 

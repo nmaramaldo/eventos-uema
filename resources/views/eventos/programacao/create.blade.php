@@ -83,7 +83,8 @@
 
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ route('eventos.programacao.index', $evento) }}" class="btn btn-outline-secondary">Voltar</a>
-                            <a href="{{ route('eventos.index') }}" class="btn btn-primary">Finalizar</a>
+                            {{-- ✅ Ajuste mínimo: Finalizar agora vai para o passo de Palestrantes --}}
+                            <a href="{{ route('eventos.palestrantes.create', $evento) }}" class="btn btn-primary">Finalizar</a>
                         </div>
                     </form>
 
@@ -129,52 +130,62 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('atividades-container');
     const template = document.getElementById('activity-template');
     const noActivitiesText = document.getElementById('no-activities-text');
-    const activityForm = document.getElementById('activityForm');
-    const csrfToken = document.querySelector('input[name="_token"]').value;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     const checkEmptyState = () => {
         noActivitiesText.style.display = container.querySelector('.activity-row') ? 'none' : 'block';
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString('pt-BR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        if (!dateString) return '';
+        const d = new Date(dateString);
+        if (Number.isNaN(d.getTime())) return dateString;
+        return d.toLocaleString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
         });
     };
 
-    const addActivityToDOM = (activityData) => {
+    const addActivityToDOM = (atividade, fallback) => {
         const clone = template.content.cloneNode(true);
-        const newRow = clone.querySelector('.activity-row');
+        const row = clone.querySelector('.activity-row');
 
-        newRow.querySelector('.activity-title').textContent = activityData.titulo;
-        newRow.querySelector('.activity-description').textContent = activityData.descricao || 'Sem descrição';
-        newRow.querySelector('.activity-modality').textContent = activityData.modalidade;
-        newRow.querySelector('.activity-location').textContent = activityData.localidade;
-        newRow.querySelector('.activity-time-start').textContent = formatDate(activityData.data_hora_inicio);
-        newRow.querySelector('.activity-time-end').textContent = formatDate(activityData.data_hora_fim);
+        // Preferir dados do servidor; cair para os do formulário se faltar algo
+        const titulo   = atividade?.titulo ?? fallback?.titulo ?? '';
+        const desc     = atividade?.descricao ?? fallback?.descricao ?? 'Sem descrição';
+        const mod      = atividade?.modalidade ?? fallback?.modalidade ?? '';
+        const inicio   = atividade?.data_hora_inicio ?? fallback?.data_hora_inicio ?? '';
+        const fim      = atividade?.data_hora_fim ?? fallback?.data_hora_fim ?? '';
+        const vagas    = atividade?.vagas ?? atividade?.capacidade ?? fallback?.capacidade ?? null;
+        const localTxt = (atividade?.local && atividade.local.nome)
+                       ? atividade.local.nome
+                       : (fallback?.localidade ?? '');
 
-        if (activityData.capacidade) {
-            newRow.querySelector('.activity-capacity').textContent = activityData.capacidade;
-            newRow.querySelector('.activity-capacity-container').style.display = 'inline';
+        row.querySelector('.activity-title').textContent = titulo;
+        row.querySelector('.activity-description').textContent = desc || 'Sem descrição';
+        row.querySelector('.activity-modality').textContent = mod || '—';
+        row.querySelector('.activity-location').textContent = localTxt || '—';
+        row.querySelector('.activity-time-start').textContent = formatDate(inicio);
+        row.querySelector('.activity-time-end').textContent = formatDate(fim);
+
+        if (vagas) {
+            row.querySelector('.activity-capacity').textContent = vagas;
+            row.querySelector('.activity-capacity-container').style.display = 'inline';
+        }
+        if (atividade?.requer_inscricao || fallback?.requer_inscricao) {
+            row.querySelector('.activity-inscricao-container').style.display = 'inline';
         }
 
-        if (activityData.requer_inscricao) {
-            newRow.querySelector('.activity-inscricao-container').style.display = 'inline';
-        }
-
-        container.appendChild(newRow);
+        container.appendChild(row);
         checkEmptyState();
     };
 
     addBtn.addEventListener('click', async function () {
-        const newActivityData = {
+        const payload = {
             titulo: document.getElementById('new_titulo').value.trim(),
             descricao: document.getElementById('new_descricao').value.trim(),
             modalidade: document.getElementById('new_modalidade').value,
+            // datetime-local -> "YYYY-MM-DDTHH:MM" (backend já trata)
             data_hora_inicio: document.getElementById('new_data_hora_inicio').value,
             data_hora_fim: document.getElementById('new_data_hora_fim').value,
             localidade: document.getElementById('new_localidade').value.trim(),
@@ -182,13 +193,12 @@ document.addEventListener('DOMContentLoaded', function () {
             requer_inscricao: document.getElementById('new_requer_inscricao').checked ? 1 : 0,
         };
 
-        // Validações
-        if (!newActivityData.titulo || !newActivityData.modalidade || !newActivityData.data_hora_inicio || !newActivityData.data_hora_fim || !newActivityData.localidade) {
+        // Validações rápidas no cliente
+        if (!payload.titulo || !payload.modalidade || !payload.data_hora_inicio || !payload.data_hora_fim || !payload.localidade) {
             alert('Preencha todos os campos obrigatórios (*).');
             return;
         }
-
-        if (new Date(newActivityData.data_hora_fim) <= new Date(newActivityData.data_hora_inicio)) {
+        if (new Date(payload.data_hora_fim) <= new Date(payload.data_hora_inicio)) {
             alert('A data de fim deve ser posterior à data de início.');
             return;
         }
@@ -197,37 +207,50 @@ document.addEventListener('DOMContentLoaded', function () {
         addBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Salvando...';
 
         try {
-            const response = await fetch('{{ route("eventos.programacao.store.ajax", $evento) }}', {
+            const resp = await fetch('{{ route("eventos.programacao.store.ajax", $evento) }}', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ atividades: [newActivityData] })
+                // enviar os campos "flat"
+                body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    addActivityToDOM(result.atividade);
-                    // Limpa os campos do formulário
-                    document.getElementById('new_titulo').value = '';
-                    document.getElementById('new_descricao').value = '';
-                    document.getElementById('new_modalidade').value = '';
-                    document.getElementById('new_data_hora_inicio').value = '';
-                    document.getElementById('new_data_hora_fim').value = '';
-                    document.getElementById('new_localidade').value = '';
-                    document.getElementById('new_capacidade').value = '';
-                    document.getElementById('new_requer_inscricao').checked = false;
+            let data;
+            try { data = await resp.json(); } catch (_) { data = null; }
+
+            if (!resp.ok) {
+                if (resp.status === 422 && data && data.errors) {
+                    const first = Object.values(data.errors)[0][0] || 'Erros de validação.';
+                    alert(first);
+                } else if (data && data.message) {
+                    alert(data.message);
                 } else {
-                    alert('Ocorreu um erro ao salvar a atividade.');
+                    alert(`Erro de comunicação com o servidor. (${resp.status})`);
                 }
-            } else {
-                alert('Erro de comunicação com o servidor.');
+                return;
             }
-        } catch (error) {
-            console.error('Erro:', error);
-            alert('Ocorreu um erro inesperado.');
+
+            if (data && data.success) {
+                addActivityToDOM(data.atividade, payload);
+
+                // Limpar formulário
+                document.getElementById('new_titulo').value = '';
+                document.getElementById('new_descricao').value = '';
+                document.getElementById('new_modalidade').value = '';
+                document.getElementById('new_data_hora_inicio').value = '';
+                document.getElementById('new_data_hora_fim').value = '';
+                document.getElementById('new_localidade').value = '';
+                document.getElementById('new_capacidade').value = '';
+                document.getElementById('new_requer_inscricao').checked = false;
+            } else {
+                alert('Ocorreu um erro ao salvar a atividade.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro de comunicação com o servidor.');
         } finally {
             addBtn.disabled = false;
             addBtn.innerHTML = 'Adicionar e Salvar';
@@ -236,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     container.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('remove-activity-btn')) {
-            // Futuramente, adicionar uma chamada AJAX para remover a atividade do banco de dados
             e.target.closest('.activity-row').remove();
             checkEmptyState();
         }

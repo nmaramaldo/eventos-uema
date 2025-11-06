@@ -33,7 +33,9 @@ class UpdateEventRequest extends FormRequest
 
             'capa'                  => ['sometimes', 'nullable', 'image', 'max:3072'],
 
+            // aceita os três que você usa
             'status'                => ['sometimes', 'nullable', 'in:rascunho,ativo,publicado'],
+
             'vagas'                 => ['sometimes', 'nullable', 'integer', 'min:1'],
 
             'locais'                        => ['sometimes', 'array'],
@@ -84,5 +86,45 @@ class UpdateEventRequest extends FormRequest
             'data_fim_evento.after_or_equal'    => 'O término do evento deve ser igual ou posterior ao início.',
             'data_fim_inscricao.after_or_equal' => 'O término das inscrições deve ser igual ou posterior ao início.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        // Normaliza status de várias formas possíveis
+        $status = $this->input('status');
+
+        if ($status === null) {
+            if ($this->has('situacao')) {
+                $status = $this->input('situacao');
+            } elseif ($this->boolean('publicar')) {
+                $status = 'publicado';
+            } elseif ($this->has('is_publicado')) {
+                $status = $this->boolean('is_publicado') ? 'publicado' : 'rascunho';
+            } elseif ($this->has('ativo')) {
+                $status = $this->boolean('ativo') ? 'ativo' : 'rascunho';
+            }
+        }
+
+        if (is_string($status)) {
+            $status = strtolower(trim($status));
+            if (in_array($status, ['on','true','1'], true)) {
+                $status = 'publicado';
+            }
+            if (in_array($status, ['off','false','0','desativado'], true)) {
+                $status = 'rascunho';
+            }
+        }
+
+        $merge = [];
+        if ($status !== null) {
+            $merge['status'] = $status;
+        }
+        if ($this->has('tipo_evento') && is_string($this->input('tipo_evento'))) {
+            $merge['tipo_evento'] = strtolower(trim((string)$this->input('tipo_evento')));
+        }
+
+        if (!empty($merge)) {
+            $this->merge($merge);
+        }
     }
 }

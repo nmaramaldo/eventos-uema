@@ -7,7 +7,8 @@ use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema; // <-- importa
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 class EventController extends Controller
 {
@@ -49,7 +50,9 @@ class EventController extends Controller
         $data = $request->validated();
         $data['tipo_evento'] = $this->normalizeTipoEvento($data['tipo_evento']);
 
-        // ✅ só grava owner_id se a coluna existir
+        // cria sempre como rascunho (sem programação ainda)
+        $data['status'] = 'rascunho';
+
         if (Schema::hasColumn('eventos', 'owner_id')) {
             $data['owner_id'] = $data['owner_id'] ?? auth()->id();
         }
@@ -63,7 +66,7 @@ class EventController extends Controller
 
         return redirect()
             ->route('eventos.programacao.create', $event)
-            ->with('success', 'Evento criado com sucesso! Agora adicione a programação.');
+            ->with('success', 'Evento criado como rascunho. Agora adicione a programação.');
     }
 
     public function show(Event $evento)
@@ -92,11 +95,42 @@ class EventController extends Controller
 
         $data = $request->validated();
 
-        if ($evento->programacao()->count() === 0) {
-            $data['status'] = 'rascunho';
+        // Atualiza todos os campos EXCETO status primeiro
+        $evento->fill(collect($data)->except(['status'])->all());
+        $evento->save();
+
+        // --- NORMALIZA o status pedido (aceita várias formas) ---
+        $statusRaw = $data['status'] ?? null;
+
+        if ($statusRaw === null) {
+            // aceita checkboxes/alternativos do form
+            if ($request->boolean('publicar') || $request->boolean('is_publicado') || $request->boolean('ativo')) {
+                $statusRaw = 'publicado';
+            } elseif ($request->boolean('rascunho')) {
+                $statusRaw = 'rascunho';
+            }
         }
 
-        $evento->update($data);
+        if (is_string($statusRaw)) {
+            $statusRaw = strtolower(trim($statusRaw));
+            // mapear valores comuns
+            if (in_array($statusRaw, ['on', 'true', '1'], true)) {
+                $statusRaw = 'publicado';
+            }
+            if (in_array($statusRaw, ['off', 'false', '0'], true)) {
+                $statusRaw = 'rascunho';
+            }
+        }
+
+        // --- FORÇA a escrita do status diretamente no banco, por último ---
+        if (in_array($statusRaw, ['publicado', 'rascunho', 'ativo'], true)) {
+            // se seu ENUM não aceitar 'ativo', o model vai manter como 'publicado'/'rascunho' conforme veio
+            DB::table('eventos')
+                ->where('id', $evento->id)
+                ->update(['status' => $statusRaw]);
+
+            $evento->refresh();
+        }
 
         return redirect()->route('eventos.show', $evento)->with('success', 'Evento atualizado com sucesso!');
     }

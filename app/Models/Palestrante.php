@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str; 
-use Illuminate\Support\Facades\Storage; 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class Palestrante extends Model
 {
@@ -20,7 +20,7 @@ class Palestrante extends Model
         'nome',
         'email',
         'biografia',
-        'foto',     // << necessário pro upload
+        'foto',
     ];
 
     protected static function booted(): void
@@ -51,6 +51,12 @@ class Palestrante extends Model
             'palestrante_id',
             'programacao_id'
         )->withTimestamps();
+    }
+
+    /** Alias para compatibilidade com chamadas ->atividades() */
+    public function atividades()
+    {
+        return $this->programacoes();
     }
 
     /** URL pública da foto (ou null) */
