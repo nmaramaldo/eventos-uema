@@ -103,7 +103,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::patch('notificacoes/{notificacao}/marcar-como-lida', [NotificacaoController::class, 'marcarComoLida'])
         ->name('notificacoes.marcarComoLida');
 
-    Route::delete('/inscricoes/{evento}', [InscricaoController::class, 'destroy'])
+    Route::delete('/inscricoes/{inscricao}', [InscricaoController::class, 'destroy'])
         ->name('inscricoes.cancelar')
         ->middleware('auth');
 

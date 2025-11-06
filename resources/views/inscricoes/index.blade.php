@@ -41,7 +41,7 @@
           <td class="text-right">
             @if($ev && method_exists($ev,'isEncerrado') && !$ev->isEncerrado())
               <form method="post"
-                    action="{{ route('inscricoes.destroy', $i) }}"
+                    action="{{ route('inscricoes.cancelar', $i) }}"
                     onsubmit="return confirm('Cancelar esta inscrição?')"
                     style="display:inline">
                 @csrf
