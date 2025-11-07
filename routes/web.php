@@ -96,6 +96,12 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::put('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'updateByEvent'])->name('eventos.programacao.update');
     Route::delete('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'destroyByEvent'])->name('eventos.programacao.destroy');
 
+    // ---- Inscrição em atividades ----
+    Route::post('/programacao/{programacao}/inscrever', [InscricaoProgramacaoController::class, 'store'])->name('programacao.inscrever');
+    Route::delete('/programacao/{programacao}/inscrever/{user}', [InscricaoProgramacaoController::class, 'destroy'])->name('programacao.cancelarInscricao');
+    Route::post('/programacao/{programacao}/presenca', [InscricaoProgramacaoController::class, 'registrarPresenca'])->name('programacao.registrarPresenca');
+    Route::delete('/programacao/{programacao}/presenca', [InscricaoProgramacaoController::class, 'removerPresenca'])->name('programacao.removerPresenca');
+
     // ---- Área do participante/logado ----
     Route::resource('inscricoes',   InscricaoController::class);
     Route::resource('notificacoes', NotificacaoController::class);

@@ -65,6 +65,13 @@ class Programacao extends Model
         )->withTimestamps();
     }
 
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'programacao_user')
+            ->withPivot('presente')
+            ->withTimestamps();
+    }
+
     // --- ESCOPOS ---
     public function scopeOrdenado($query)
     {

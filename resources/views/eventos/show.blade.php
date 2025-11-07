@@ -91,15 +91,79 @@
         </div>
       @endif
 
-      {{-- Programação / Detalhes (se quiser listar $evento->detalhes) --}}
-      {{--
       <div class="panel panel-default">
         <div class="panel-heading"><strong>Programação</strong></div>
         <div class="panel-body">
-          <p class="text-muted">Em breve…</p>
+          @if($evento->programacoes->count() > 0)
+            @foreach($evento->programacoes as $programacao)
+              <div class="panel panel-default">
+                <div class="panel-heading">{{ $programacao->titulo }}</div>
+                <div class="panel-body">
+                  <p><strong>Período:</strong> {{ $programacao->periodo }}</p>
+                  <p><strong>Descrição:</strong> {{ $programacao->descricao }}</p>
+                  @if($programacao->requer_inscricao)
+                    <h4>Participantes</h4>
+                    @if($programacao->users->count() > 0)
+                      <table class="table">
+                        <thead>
+                          <tr>
+                            <th>Nome</th>
+                            <th>Presença</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @foreach($programacao->users as $user)
+                            <tr>
+                              <td>{{ $user->name }}</td>
+                              <td>
+                                @if($user->pivot->presente)
+                                  <form action="{{ route('programacao.removerPresenca', ['programacao' => $programacao]) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <input type="hidden" name="user_id" value="{{ $user->id }}">
+                                    <button type="submit" class="btn btn-xs btn-success">Presente</button>
+                                  </form>
+                                @else
+                                  <form action="{{ route('programacao.registrarPresenca', ['programacao' => $programacao]) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <input type="hidden" name="user_id" value="{{ $user->id }}">
+                                    <button type="submit" class="btn btn-xs btn-default">Marcar Presença</button>
+                                  </form>
+                                @endif
+                              </td>
+                            </tr>
+                          @endforeach
+                        </tbody>
+                      </table>
+                    @else
+                      <p>Nenhum participante inscrito nesta atividade.</p>
+                    @endif
+
+                    @can('manage-users')
+                      <hr>
+                      <h5>Inscrever novo participante</h5>
+                      <form action="{{ route('programacao.inscrever', ['programacao' => $programacao]) }}" method="POST" class="form-inline">
+                        @csrf
+                        <div class="form-group">
+                          <label for="user_id">Usuário</label>
+                          <select name="user_id" id="user_id" class="form-control">
+                            @foreach(App\Models\User::all() as $user)
+                              <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            @endforeach
+                          </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Inscrever</button>
+                      </form>
+                    @endcan
+                  @endif
+                </div>
+              </div>
+            @endforeach
+          @else
+            <p class="text-muted">Nenhuma programação cadastrada para este evento.</p>
+          @endif
         </div>
       </div>
-      --}}
 
       <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap">
         <a href="{{ route('eventos.index') }}" class="btn btn-default">Voltar</a>

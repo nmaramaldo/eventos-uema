@@ -145,6 +145,13 @@ class User extends Authenticatable
         return $this->hasMany(Event::class, 'coordenador_id');
     }
 
+    public function programacoes(): BelongsToMany
+    {
+        return $this->belongsToMany(Programacao::class, 'programacao_user')
+            ->withPivot('presente')
+            ->withTimestamps();
+    }
+
     public function notificacoes(): HasMany
     {
         return $this->hasMany(Notificacao::class);
