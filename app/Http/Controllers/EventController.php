@@ -16,9 +16,8 @@ class EventController extends Controller
     {
         $this->authorize('viewAny', Event::class);
 
-        $q      = trim((string) $request->query('q', ''));
-        $status = $request->query('status');
-
+        $q      = trim((string) $request->query('q'));
+        
         $query = Event::query();
 
         if ($q !== '') {
@@ -27,10 +26,7 @@ class EventController extends Controller
                 ->orWhere('descricao', 'like', "%{$q}%"));
         }
 
-        if ($status !== null && $status !== '') {
-            $query->where('status', $status);
-        }
-
+        
         $eventos = $query->latest('created_at')->paginate(15)->withQueryString();
 
         return view('eventos.index', compact('eventos'));
@@ -50,12 +46,15 @@ class EventController extends Controller
         $data = $request->validated();
         $data['tipo_evento'] = $this->normalizeTipoEvento($data['tipo_evento']);
 
-        // cria sempre como rascunho (sem programação ainda)
+        // cria sempre como rascunho
         $data['status'] = 'rascunho';
 
         if (Schema::hasColumn('eventos', 'owner_id')) {
             $data['owner_id'] = $data['owner_id'] ?? auth()->id();
         }
+
+        $data['tipo_pagamento'] = $request->input('tipo_pagamento', 'gratis');
+        $data['detalhes_pagamento'] = $request->input('detalhes_pagamento', null);
 
         $event = Event::create($data);
 
@@ -124,20 +123,19 @@ class EventController extends Controller
             }
         }
 
-        // --- FORÇA a escrita do status diretamente no banco, por último ---
+        
         if (in_array($statusRaw, ['publicado', 'rascunho', 'ativo'], true)) {
             // Se o evento não tiver programação, ele não pode ser publicado.
             // Força o status para 'rascunho' se tentar publicar sem programação.
             if ($statusRaw === 'publicado' && $evento->programacao->isEmpty()) {
                 $statusRaw = 'rascunho';
-                // Opcional: Adicionar uma mensagem de erro ou aviso ao usuário
-                // session()->flash('error', 'Não é possível publicar um evento sem programação. O status foi alterado para rascunho.');
+                
             }
 
-            // se seu ENUM não aceitar 'ativo', o model vai manter como 'publicado'/'rascunho' conforme veio
+            
             DB::table('eventos')
                 ->where('id', $evento->id)
-                ->update(['status' => $statusRaw]);
+                ->update(['status' => 'rascunho']);
 
             $evento->refresh();
         }
@@ -158,4 +156,19 @@ class EventController extends Controller
         $valid = ['presencial', 'online', 'hibrido', 'videoconf'];
         return in_array($tipo, $valid, true) ? $tipo : 'presencial';
     }
+
+    public function publish(Event $evento)
+    {
+        // 1. Autoriza a ação (reutiliza a permissão de 'update' da EventPolicy)
+        $this->authorize('update', $evento);
+
+        // 2. Altera o status do evento para 'publicado'
+        $evento->status = 'publicado';
+        $evento->save();
+
+        // 3. Redireciona de volta para a lista com uma mensagem de sucesso
+        return redirect()->route('eventos.index')
+                         ->with('success', 'Evento "' . $evento->nome . '" foi publicado com sucesso!');
+    }
+    
 }

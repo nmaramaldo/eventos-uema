@@ -24,8 +24,10 @@ class StoreEventRequest extends FormRequest
             'data_fim_inscricao'     => 'required|date|after_or_equal:data_inicio_inscricao',
             'tipo_evento'            => 'required|string|max:50',
             'logomarca'              => 'nullable|image|mimes:jpeg,png,gif|max:5120',
-            'status'                 => 'required|string|max:50',
+            'status'                 => 'nullable', 'string', 'in:rascunho,publicado,ativo',
             'vagas'                  => 'nullable|integer|min:0',
+            'tipo_pagamento' => ['required', 'string', 'in:gratis,pix,outros'],
+            'detalhes_pagamento' => ['nullable', 'required_if:tipo_pagamento,outros', 'string', 'max:1000'],
         ];
     }
 

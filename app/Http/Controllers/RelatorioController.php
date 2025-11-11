@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 
 class RelatorioController extends Controller
 {
@@ -68,26 +69,28 @@ class RelatorioController extends Controller
 
     public function exportarPDF(Event $evento)
     {
-        // Autoriza o usuário
         $this->authorize('viewAny', Event::class); 
 
         // Carrega os mesmos dados da página de detalhes
         $evento->load('inscricoes.user');
         $participantes = $evento->inscricoes;
 
+        // ✅ CAPTURA OS NOVOS DADOS
+        $usuarioExportador = Auth::user(); // Pega o usuário logado
+        $dataExportacao = now(); // Pega a data e hora atuais
+
         // Prepara os dados para a view
         $data = [
             'evento' => $evento,
-            'participantes' => $participantes
+            'participantes' => $participantes,
+            'usuarioExportador' => $usuarioExportador, //  Passa o usuário para a view
+            'dataExportacao'    => $dataExportacao     //  Passa a data para a view
         ];
 
-        // Carrega a view do PDF que acabamos de criar
+        // Carrega a view do PDF
         $pdf = Pdf::loadView('relatorios.evento-pdf', $data);
         
-        // Define o nome do arquivo para download
         $fileName = 'relatorio_' . \Illuminate\Support\Str::slug($evento->nome) . '.pdf';
-
-        // Força o download do PDF no navegador
         return $pdf->download($fileName);
     }
 }

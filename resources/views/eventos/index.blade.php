@@ -110,6 +110,13 @@
                                     <a class="btn btn-sm btn-outline-secondary" href="{{ route('eventos.show', $e) }}">Ver</a>
                                     @can('update', $e)
                                         <a class="btn btn-sm btn-primary" href="{{ route('eventos.edit', $e) }}">Editar</a>
+                                        @if($e->status == 'rascunho')
+                                            <form action="{{ route('eventos.publish', $e) }}" method="post" class="d-inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button class="btn btn-sm btn-success" onclick="return confirm('Publicar este evento?')">Publicar</button>
+                                            </form>
+                                        @endif
                                     @endcan
                                     @can('delete', $e)
                                         <form action="{{ route('eventos.destroy', $e) }}" method="post" class="d-inline">

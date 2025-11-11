@@ -25,7 +25,7 @@
 
   <footer class="mt-auto py-3 bg-light">
     <div class="container">
-        <p class="text-center text-muted">Versão: 1.0</p>
+        <p class="text-center text-muted">Versão: 1.0-rc.1</p>
     </div>
   </footer>
 

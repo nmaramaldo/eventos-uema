@@ -70,6 +70,8 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::middleware('can:manage-users')->group(function () {
         // Eventos (admin)
         Route::resource('eventos', EventController::class);
+        Route::patch('/eventos/{evento}/publish', [EventController::class, 'publish'])
+             ->name('eventos.publish');
 
         // Palestrantes (admin)
         Route::prefix('eventos/{evento}/palestrantes')->group(function () {

@@ -36,6 +36,12 @@ class Event extends Model
         'logomarca_path',
         'status',
         'vagas',
+        'tipo_pagamento',      
+        'detalhes_pagamento', 
+    ];
+
+    protected $attributes = [
+        'status' => 'rascunho',
     ];
 
     protected $casts = [
@@ -46,13 +52,7 @@ class Event extends Model
         'vagas'                 => 'integer',
     ];
 
-    /**
-     * Normaliza o status ao atribuir:
-     * - Ignora nulo/vazio (não altera o que já estava)
-     * - Converte para minúsculo e trim
-     * - Aceita exatamente: rascunho | ativo | publicado
-     * - Valor inválido: não altera
-     */
+    
     public function setStatusAttribute($value): void
     {
         if ($value === null || $value === '') {

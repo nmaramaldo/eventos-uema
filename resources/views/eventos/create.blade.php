@@ -104,26 +104,43 @@
                             </div>
                         </div>
 
-                        {{-- STATUS E VAGAS --}}
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="status" class="form-label">Status *</label>
-                                <select id="status" name="status" class="form-select @error('status') is-invalid @enderror" required>
-                                    <option value="rascunho" @selected(old('status', 'rascunho') == 'rascunho')>Rascunho</option>
-                                    <option value="publicado" @selected(old('status') == 'publicado')>Publicado</option>
-                                </select>
-                                <small class="text-muted d-block mt-1">
-                                    <strong>Observação:</strong> o status <em>Encerrado</em> é exibido automaticamente quando a data de término do evento já passou.
-                                </small>
-                                @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="vagas" class="form-label">Vagas</label>
-                                <input type="number" id="vagas" name="vagas" class="form-control @error('vagas') is-invalid @enderror" value="{{ old('vagas') }}" placeholder="Deixe em branco para ilimitado">
-                                @error('vagas')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            </div>
+                        {{-- VAGAS --}}
+                        <div class="col-md-6 mb-3">
+                            <label for="vagas" class="form-label">Vagas</label>
+                            <input type="number" id="vagas" name="vagas" 
+                                class="form-control @error('vagas') is-invalid @enderror" 
+                                value="{{ old('vagas') }}" placeholder="Deixe em branco para ilimitado">
+                            @error('vagas')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
+                        {{-- TIPO DE PAGAMENTO --}}
+                        <div class="col-md-6 mb-3">
+                            <label for="tipo_pagamento" class="form-label">Tipo de Pagamento *</label>
+                            @php
+                                $pagamentoSelecionado = old('tipo_pagamento', $eventData['tipo_pagamento'] ?? 'gratis');
+                            @endphp
+
+                            <select id="tipo_pagamento" name="tipo_pagamento" 
+                                    class="form-select @error('tipo_pagamento') is-invalid @enderror" required>
+                                <option value="gratis" @selected($pagamentoSelecionado == 'gratis')>Grátis</option>
+                                <option value="pix" @selected($pagamentoSelecionado == 'pix')>Pix</option>
+                                <option value="outros" @selected($pagamentoSelecionado == 'outros')>Outros</option>
+                            </select>
+                            @error('tipo_pagamento')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+
+                    {{-- DETALHES DO PAGAMENTO (aparece se escolher "outros") --}}
+                    <div class="row" id="detalhes-pagamento-box" style="display: none;">
+                        <div class="col-md-12 mb-3">
+                            <label for="detalhes_pagamento" class="form-label">Detalhes do Pagamento *</label>
+                            <textarea id="detalhes_pagamento" name="detalhes_pagamento" 
+                                    class="form-control @error('detalhes_pagamento') is-invalid @enderror" 
+                                    rows="3" placeholder="Ex: Doação de alimentos, dados bancários, etc.">{{ old('detalhes_pagamento', $eventData['detalhes_pagamento'] ?? '') }}</textarea>
+                            @error('detalhes_pagamento')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
                         <div class="text-end mt-4">
                             <a href="{{ route('eventos.index') }}" class="btn btn-secondary me-2">Cancelar</a>
                             <button type="submit" class="btn btn-primary">Próximo: Programação</button>
@@ -134,4 +151,26 @@
         </div>
     </div>
 </div>
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectPagamento = document.getElementById('tipo_pagamento');
+        const boxDetalhes = document.getElementById('detalhes-pagamento-box');
+
+        function toggleDetalhesBox() {
+            if (selectPagamento.value === 'outros') {
+                boxDetalhes.style.display = 'block';
+            } else {
+                boxDetalhes.style.display = 'none';
+                document.getElementById('detalhes_pagamento').value = '';
+            }
+        }
+
+        selectPagamento.addEventListener('change', toggleDetalhesBox);
+        toggleDetalhesBox(); // executa ao carregar a página (útil em caso de erro de validação)
+    });
+    </script>
+    @endpush
+
 @endsection
