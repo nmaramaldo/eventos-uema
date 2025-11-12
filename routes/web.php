@@ -65,6 +65,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
     // “Meus eventos”
     Route::get('/meus-eventos', [MyEventsController::class, 'index'])->name('meus-eventos.index');
     Route::get('/meus-eventos/{evento}/editar', [MyEventsController::class, 'edit'])->name('meus-eventos.edit');
+    Route::get('/minha-jornada', [MyEventsController::class, 'jornada'])->name('meus-eventos.jornada');
 
     // ---- Administrativo (admin/master) ----
     Route::middleware('can:manage-users')->group(function () {

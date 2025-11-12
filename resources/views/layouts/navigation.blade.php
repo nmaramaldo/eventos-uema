@@ -56,6 +56,7 @@
               <i class="bi bi-person-circle"></i> {{ auth()->user()?->name ?? 'Conta' }}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+              <li><a class="dropdown-item" href="{{ route('meus-eventos.jornada') }}">Minha Jornada</a></li>
               <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Perfil</a></li>
               <li><hr class="dropdown-divider"></li>
               <li>
