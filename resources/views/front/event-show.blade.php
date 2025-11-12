@@ -49,6 +49,15 @@
                     @if($evento->area_tematica)
                         <p class="mb-0"><strong>Área temática:</strong> {{ $evento->area_tematica }}</p>
                     @endif
+
+                    @if(in_array($evento->tipo_evento, ['online', 'hibrido']))
+                        @if($evento->link_reuniao)
+                            <p class="mb-2"><strong>Link da reunião:</strong> <a href="{{ $evento->link_reuniao }}" target="_blank">{{ $evento->link_reuniao }}</a></p>
+                        @endif
+                        @if($evento->link_app)
+                            <p class="mb-0"><strong>Link para baixar o app:</strong> <a href="{{ $evento->link_app }}" target="_blank">{{ $evento->link_app }}</a></p>
+                        @endif
+                    @endif
                 </div>
             </div>
 

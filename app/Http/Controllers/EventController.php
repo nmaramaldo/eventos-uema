@@ -55,6 +55,8 @@ class EventController extends Controller
 
         $data['tipo_pagamento'] = $request->input('tipo_pagamento', 'gratis');
         $data['detalhes_pagamento'] = $request->input('detalhes_pagamento', null);
+        $data['link_reuniao'] = $request->input('link_reuniao', null);
+        $data['link_app'] = $request->input('link_app', null);
 
         $event = Event::create($data);
 

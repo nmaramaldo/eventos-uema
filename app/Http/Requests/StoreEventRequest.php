@@ -28,6 +28,8 @@ class StoreEventRequest extends FormRequest
             'vagas'                  => 'nullable|integer|min:0',
             'tipo_pagamento' => ['required', 'string', 'in:gratis,pix,outros'],
             'detalhes_pagamento' => ['nullable', 'required_if:tipo_pagamento,outros', 'string', 'max:1000'],
+            'link_reuniao' => ['nullable', 'string', 'max:255'],
+            'link_app' => ['nullable', 'string', 'max:255'],
         ];
     }
 

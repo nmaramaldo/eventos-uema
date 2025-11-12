@@ -104,6 +104,22 @@
                             </div>
                         </div>
 
+                        {{-- ONLINE FIELDS --}}
+                        <div id="online-fields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="link_reuniao" class="form-label">Link da Reunião</label>
+                                    <input type="url" id="link_reuniao" name="link_reuniao" class="form-control @error('link_reuniao') is-invalid @enderror" value="{{ old('link_reuniao') }}" placeholder="https://">
+                                    @error('link_reuniao')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="link_app" class="form-label">Link do App (Meet, Teams, etc)</label>
+                                    <input type="url" id="link_app" name="link_app" class="form-control @error('link_app') is-invalid @enderror" value="{{ old('link_app') }}" placeholder="https://">
+                                    @error('link_app')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                         {{-- VAGAS --}}
                         <div class="col-md-6 mb-3">
@@ -155,6 +171,21 @@
     @push('scripts')
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const selectTipoEvento = document.getElementById('tipo_evento');
+        const onlineFields = document.getElementById('online-fields');
+
+        function toggleOnlineFields() {
+            const selected = selectTipoEvento.value;
+            if (selected === 'online' || selected === 'hibrido') {
+                onlineFields.style.display = 'block';
+            } else {
+                onlineFields.style.display = 'none';
+            }
+        }
+
+        selectTipoEvento.addEventListener('change', toggleOnlineFields);
+        toggleOnlineFields();
+
         const selectPagamento = document.getElementById('tipo_pagamento');
         const boxDetalhes = document.getElementById('detalhes-pagamento-box');
 

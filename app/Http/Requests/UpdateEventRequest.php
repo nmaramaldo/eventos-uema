@@ -38,6 +38,9 @@ class UpdateEventRequest extends FormRequest
 
             'vagas'                 => ['sometimes', 'nullable', 'integer', 'min:1'],
 
+            'link_reuniao'          => ['sometimes', 'nullable', 'string', 'max:255'],
+            'link_app'              => ['sometimes', 'nullable', 'string', 'max:255'],
+
             'locais'                        => ['sometimes', 'array'],
             'locais.*.nome'                 => ['required_with:locais', 'string', 'max:255'],
 

@@ -37,7 +37,9 @@ class Event extends Model
         'status',
         'vagas',
         'tipo_pagamento',      
-        'detalhes_pagamento', 
+        'detalhes_pagamento',
+        'link_reuniao',
+        'link_app',
     ];
 
     protected $attributes = [
