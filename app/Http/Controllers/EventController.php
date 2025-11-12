@@ -146,6 +146,11 @@ class EventController extends Controller
     public function destroy(Event $evento)
     {
         $this->authorize('delete', $evento);
+
+        if ($evento->inscricoes()->exists()) {
+            return redirect()->route('eventos.index')->with('error', 'Não é possível remover um evento que já possui participantes inscritos.');
+        }
+
         $evento->delete();
         return redirect()->route('eventos.index')->with('success', 'Evento removido.');
     }
