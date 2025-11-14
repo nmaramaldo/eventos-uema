@@ -1,61 +1,89 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Plataforma de Eventos UEMA (EVENTOS-UEMA)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?style=for-the-badge&logo=php)
+![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap)
+![SQLite](https://img.shields.io/badge/SQLite-3.x-003B57?style=for-the-badge&logo=sqlite)
 
-## About Laravel
+**Status do Projeto:** `Em Desenvolvimento Ativo (Versão 1.0)`
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Este projeto é uma plataforma web robusta para o cadastro, gerenciamento e divulgação de eventos acadêmicos, científicos e culturais da **Universidade Estadual do Maranhão (UEMA)**.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+O sistema está sendo desenvolvido como parte do programa de **Residência Tecnológica da BRISA** em parceria com a UEMA, com o objetivo de centralizar e profissionalizar todo o ciclo de vida dos eventos da universidade.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🚀 Funcionalidades Principais
 
-## Learning Laravel
+### Gerenciamento de Eventos
+* **Fluxo de Criação em 3 Passos:** Um fluxo intuitivo para o organizador cadastrar (1) Informações Gerais, (2) Programação e (3) Palestrantes, salvando os dados na sessão entre as etapas.
+* **Gerenciamento Completo (CRUD):** Funcionalidades completas para listar, editar e excluir eventos.
+* **Publicação de Eventos:** Um evento só pode ser "Publicado" (visível ao público) após ter sua programação cadastrada, garantindo a integridade dos dados.
+* **Pagamento:** Opção de cadastro de eventos "Grátis", "Pix" ou "Outros", com campo dinâmico para detalhes.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Gerenciamento de Programação e Palestrantes
+* **CRUD Aninhado:** Sistema robusto onde cada evento possui seu próprio gerenciamento de programação e palestrantes.
+* **Salvar Atividades com AJAX:** A tela de "Programação" permite adicionar e salvar cada atividade (palestra, workshop) individualmente, sem recarregar a página.
+* **Associação:** Palestrantes podem ser criados e associados a múltiplos eventos e atividades.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Controle de Acesso e Usuários
+* **Controle de Acesso por Papel (ACL):** Sistema de permissões baseado em `Policies` do Laravel.
+    * **Master:** Controle total do sistema, incluindo gerenciamento de usuários.
+    * **Admin:** Gerencia todos os aspectos dos eventos.
+    * **Usuário Comum (Participante):** Pode se inscrever em eventos e gerenciar suas inscrições.
+* **Validação de CPF:** O formulário de registro de novos usuários inclui máscara (`000.000.000-00`), validação em tempo real (JavaScript) e no back-end (`laravel/validador`).
+* **Gerenciamento de Inscrições:** O usuário pode cancelar a própria inscrição. Admins podem gerenciar todas.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Módulo de Relatórios
+* **Relatório Mestre-Detalhe:** Página principal de relatórios com filtros de busca (nome, período).
+* **Relatório Detalhado:** Ao clicar em um evento, o admin vê um relatório individual com a lista de todos os participantes inscritos e seus status de check-in.
+* **Exportação para PDF:** Funcionalidade de exportação de relatórios detalhados para PDF, incluindo:
+    * Logo oficial da UEMA.
+    * Cabeçalho com o nome do usuário que exportou, data e hora.
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🛠️ Arquitetura e Tecnologias
 
-### Premium Partners
+Este projeto utiliza uma arquitetura **Laravel (back-end)** tradicional, com a interface renderizada pelo **Blade (front-end)**.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+* **Back-end:**
+    * PHP 8.2
+    * Laravel 12
+    * Arquitetura **Model-View-Controller (MVC)**
+    * Autorização via **Policies** (`EventPolicy`, `InscricaoPolicy`, `UserPolicy`)
+* **Front-end:**
+    * Laravel **Blade**
+    * **Bootstrap 5** (via CDN)
+    * JavaScript (para interatividade, como formulários dinâmicos e validação de CPF)
+* **Banco de Dados:**
+    * Desenvolvimento: **SQLite**
+    * Produção (Planejado): **PostgreSQL**
+* **Pacotes Principais:**
+    * `barryvdh/laravel-dompdf` (para geração de PDFs)
+    * `laravel/validador` (para validação de CPF)
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 📦 Instalação (Ambiente de Desenvolvimento)
 
-## Code of Conduct
+Siga estes passos para configurar o projeto localmente.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 1. Pré-requisitos
 
-## Security Vulnerabilities
+* PHP >= 8.2
+* Composer
+* Extensão PHP para `gd` (necessária para a geração de PDF com imagens)
+* Extensão PHP para `sqlite3`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 2. Passos
 
-## License
+1. Clone o repositório: `[https://github.com/nmaramaldo/eventos-uema.git](https://github.com/nmaramaldo/eventos-uema.git)`
+`cd eventos-uema`
+2. Instale as dependências: `composer install` 
+3. Configure o `.env`: `cp .env.example .env` e `php artisan key:generate` 
+4. Crie o arquivo do banco: `touch database/database.sqlite` 
+5. Rode as migrations e seeders: `php artisan migrate` 
+6. Inicie o servidor: `php artisan serve`
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+
