@@ -14,7 +14,8 @@ class DatabaseSeeder extends Seeder
     {
         // 1) Usuário MASTER (sempre)
         $this->call([
-            MasterUserSeeder::class,
+            //MasterUserSeeder::class,
+            EventosSeeder::class,
         ]);
 
         // 2) Usuário de teste (apenas em local)

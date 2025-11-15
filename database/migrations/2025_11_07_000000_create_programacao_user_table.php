@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('programacao_user', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('programacao_id')->constrained('programacao')->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->boolean('presente')->default(false);
             $table->timestamps();
 
