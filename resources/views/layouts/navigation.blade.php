@@ -42,10 +42,10 @@
             </li>
           @endcan
 
-          @can('viewAny', App\Models\User::class)
+          @can('isAdmin')
             <li class="nav-item">
-              <a class="nav-link {{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}"
-                 href="{{ route('admin.usuarios.index') }}">Administração</a>
+              <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}"
+                 href="{{ route('admin.dashboard') }}">Admin</a>
             </li>
           @endcan
 

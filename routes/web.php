@@ -16,6 +16,7 @@ use App\Http\Controllers\RelatorioController;
 
 // Admin
 use App\Http\Controllers\Admin\UserAdminController;
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ProgramacaoController;
 
@@ -132,6 +133,7 @@ Route::middleware(['auth', 'can:manage-users'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+        Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::resource('usuarios', UserAdminController::class)->except(['show', 'destroy']);
         Route::patch('usuarios/{user}/ativar',    [UserAdminController::class, 'ativar'])->name('usuarios.ativar');
         Route::patch('usuarios/{user}/desativar', [UserAdminController::class, 'desativar'])->name('usuarios.desativar');
