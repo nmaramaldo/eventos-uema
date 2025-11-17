@@ -80,7 +80,7 @@
                             <th class="px-3">Período de Inscrições</th>
                             <th class="px-3">Tipo</th>
                             <th class="px-3">Status</th>
-                            <th class="px-3 text-end" style="width: 260px;">Ações</th>
+                            <th class="px-3 text-end" style="width: 360px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -112,21 +112,48 @@
                                 </td>
                                 <td class="px-3 text-end">
                                     <a class="btn btn-sm btn-outline-secondary" href="{{ route('eventos.show', $e) }}">Ver</a>
+
                                     @can('update', $e)
+                                        {{-- Programação das atividades --}}
+                                        <a class="btn btn-sm btn-outline-primary"
+                                           href="{{ route('eventos.programacao.index', $e) }}">
+                                            Programação
+                                        </a>
+
+                                        {{-- ✅ botão separado de Check-in / Credenciamento --}}
+                                        <a class="btn btn-sm btn-outline-success"
+                                           href="{{ route('eventos.checkin', $e) }}">
+                                            Check-in
+                                        </a>
+
+                                        {{-- Modelos / emissão de certificados desse evento --}}
+                                        <a class="btn btn-sm btn-outline-info"
+                                           href="{{ route('certificados.create', ['evento_id' => $e->id]) }}">
+                                            Certificados
+                                        </a>
+
                                         <a class="btn btn-sm btn-primary" href="{{ route('eventos.edit', $e) }}">Editar</a>
+
                                         @if($e->status == 'rascunho')
                                             <form action="{{ route('eventos.publish', $e) }}" method="post" class="d-inline">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button class="btn btn-sm btn-success" onclick="return confirm('Publicar este evento?')">Publicar</button>
+                                                <button class="btn btn-sm btn-success"
+                                                        onclick="return confirm('Publicar este evento?')">
+                                                    Publicar
+                                                </button>
                                             </form>
                                         @endif
                                     @endcan
+
                                     @can('delete', $e)
                                         <form action="{{ route('eventos.destroy', $e) }}" method="post" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja remover este evento?')">Excluir</button>
+                                            <button class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('Tem certeza que deseja remover este evento?')">
+                                                Excluir
+                                            </button>
                                         </form>
                                     @endcan
                                 </td>
@@ -140,7 +167,6 @@
                 </table>
             </div>
         </div>
-
         @if ($eventos->hasPages())
             <div class="card-footer">
                 {{ $eventos->links() }}

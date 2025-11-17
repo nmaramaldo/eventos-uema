@@ -3,80 +3,113 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="container" style="padding:60px 0">
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
+<div class="container py-5">
 
-    <div class="row">
-        <div class="col-sm-12">
-            <h2 class="page-header">Dashboard</h2>
-            <p>Você está logado(a), {{ auth()->user()->name }}!</p>
-        </div>
-    </div>
+    <h1 class="mb-4">DASHBOARD</h1>
 
-    {{-- Atalhos do usuário (sempre visíveis) --}}
-    <div class="row" style="margin-top:20px">
-        <div class="col-sm-4 mb-3">
-            <a href="{{ route('inscricoes.index') }}" class="panel panel-default" style="display:block;text-decoration:none;">
-                <div class="panel-heading"><strong>Minhas inscrições</strong></div>
-                <div class="panel-body text-muted">Gerencie suas inscrições em eventos</div>
-            </a>
-        </div>
+    <p class="text-muted">
+        Você está logado(a), {{ auth()->user()->name }}!
+    </p>
 
-        <div class="col-sm-4 mb-3">
-            <a href="{{ route('certificados.index') }}" class="panel panel-default" style="display:block;text-decoration:none;">
-                <div class="panel-heading"><strong>Meus certificados</strong></div>
-                <div class="panel-body text-muted">Acesse e baixe seus certificados</div>
-            </a>
-        </div>
-    </div>
-
-    {{-- Bloco de Administração (visível para ADMIN e MASTER) --}}
-    @can('viewAny', App\Models\Event::class)
-    <div class="row" style="margin-top:35px">
-        <div class="col-sm-12">
-            <h3 class="page-header" style="margin-top:0">Administração</h3>
-        </div>
-
-        {{-- Card "Usuários" - Visível apenas para MASTER --}}
-        @can('viewAny', App\Models\User::class)
-            <div class="col-sm-4 mb-3">
-                <a href="{{ route('admin.usuarios.index') }}" class="panel panel-default" style="display:block;text-decoration:none;">
-                    <div class="panel-heading"><strong>Usuários</strong></div>
-                    <div class="panel-body text-muted">Criar, editar, ativar/bloquear</div>
-                </a>
+    {{-- Área do PARTICIPANTE: só aparece para quem NÃO é admin/master --}}
+    @cannot('manage-users')
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-light fw-semibold">
+                        Minhas inscrições
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-3">
+                            Gerencie suas inscrições em eventos
+                        </p>
+                        <a href="{{ route('inscricoes.index') }}" class="btn btn-primary">
+                            Acessar minhas inscrições
+                        </a>
+                    </div>
+                </div>
             </div>
-        @endcan
 
-        {{-- Card "Eventos" - Visível para ADMIN e MASTER --}}
-        <div class="col-sm-4 mb-3">
-            <a href="{{ route('eventos.index') }}" class="panel panel-default" style="display:block;text-decoration:none;">
-                <div class="panel-heading"><strong>Eventos</strong></div>
-                <div class="panel-body text-muted">Cadastro e programação</div>
-            </a>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-light fw-semibold">
+                        Meus certificados
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-3">
+                            Acesse e baixe seus certificados
+                        </p>
+                        {{-- rota nova, só do participante --}}
+                        <a href="{{ route('certificados.meus') }}" class="btn btn-primary">
+                            Ver meus certificados
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
+    @endcannot
 
-        {{-- Card "Relatórios" - Visível apenas para MASTER --}}
-        @can('viewAny', App\Models\User::class)           
-            <div class="col-sm-4 mb-3">               
-                <a href="{{ route('relatorios.index') }}" class="panel panel-default" style="display:block;text-decoration:none;">
-                    <div class="panel-heading"><strong>Relatórios</strong></div>
-                    <div class="panel-body text-muted">Gerar relatórios de eventos e participantes</div>
-                </a>
-            </div>
-        @endcan
+    {{-- Área de ADMINISTRAÇÃO: só para quem pode manage-users (master/admin) --}}
+    @can('manage-users')
+        <h2 class="h4 mt-4 mb-3">Administração</h2>
 
-        {{-- Card "Audit-logs" - Visível apenas para MASTER --}}
-        @can('viewAny', App\Models\User::class)           
-            <div class="col-sm-4 mb-3">               
-                <a href="{{ route('audit-logs.index') }}" class="panel panel-default" style="display:block;text-decoration:none;">
-                    <div class="panel-heading"><strong>Logs de Auditoria</strong></div>
-                    <div class="panel-body text-muted">Registro de atividades e alterações no sistema</div>
-                </a>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-light fw-semibold">Usuários</div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-3">
+                            Criar, editar, ativar/desativar usuários
+                        </p>
+                        <a href="{{ route('admin.usuarios.index') }}" class="btn btn-sm btn-primary">
+                            Gerenciar usuários
+                        </a>
+                    </div>
+                </div>
             </div>
-        @endcan
-    </div>
-    @endcan 
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-light fw-semibold">Eventos</div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-3">
+                            Cadastro e programação de eventos
+                        </p>
+                        <a href="{{ route('eventos.index') }}" class="btn btn-sm btn-primary">
+                            Gerenciar eventos
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-light fw-semibold">Relatórios</div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-3">
+                            Gerar relatórios de eventos e participantes
+                        </p>
+                        <a href="{{ route('relatorios.index') }}" class="btn btn-sm btn-primary">
+                            Ver relatórios
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-light fw-semibold">Logs de Auditoria</div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-3">
+                            Acompanhar alterações realizadas no sistema
+                        </p>
+                        <a href="{{ route('audit-logs.index') }}" class="btn btn-sm btn-primary">
+                            Ver logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endcan
 </div>
 @endsection

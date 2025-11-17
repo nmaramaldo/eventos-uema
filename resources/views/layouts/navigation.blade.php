@@ -57,6 +57,13 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
               <li><a class="dropdown-item" href="{{ route('meus-eventos.jornada') }}">Minha Jornada</a></li>
+
+              {{-- Só PARTICIPANTE vê Minhas inscrições / Meus certificados --}}
+              @cannot('manage-users')
+                <li><a class="dropdown-item" href="{{ route('inscricoes.index') }}">Minhas inscrições</a></li>
+                <li><a class="dropdown-item" href="{{ route('certificados.meus') }}">Meus certificados</a></li>
+              @endcannot
+
               <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Perfil</a></li>
               <li><hr class="dropdown-divider"></li>
               <li>

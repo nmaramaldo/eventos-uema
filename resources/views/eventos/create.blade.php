@@ -72,6 +72,25 @@
                             </div>
                         </div>
 
+                        {{-- ✅ CARGA HORÁRIA DO EVENTO --}}
+                        <div class="mb-3">
+                            <label for="carga_horaria" class="form-label">Carga horária do evento (em horas)</label>
+                            <input
+                                type="number"
+                                id="carga_horaria"
+                                name="carga_horaria"
+                                class="form-control @error('carga_horaria') is-invalid @enderror"
+                                min="0"
+                                step="1"
+                                value="{{ old('carga_horaria') }}"
+                                placeholder="Ex: 20"
+                            >
+                            @error('carga_horaria')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <small class="text-muted">
+                                Esse valor será usado nos certificados (tag <code>{carga_horaria}</code>).
+                            </small>
+                        </div>
+
                         {{-- DATAS DE INSCRIÇÃO --}}
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -121,42 +140,43 @@
                         </div>
 
                         <div class="row">
-                        {{-- VAGAS --}}
-                        <div class="col-md-6 mb-3">
-                            <label for="vagas" class="form-label">Vagas</label>
-                            <input type="number" id="vagas" name="vagas" 
-                                class="form-control @error('vagas') is-invalid @enderror" 
-                                value="{{ old('vagas') }}" placeholder="Deixe em branco para ilimitado">
-                            @error('vagas')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            {{-- VAGAS --}}
+                            <div class="col-md-6 mb-3">
+                                <label for="vagas" class="form-label">Vagas</label>
+                                <input type="number" id="vagas" name="vagas" 
+                                    class="form-control @error('vagas') is-invalid @enderror" 
+                                    value="{{ old('vagas') }}" placeholder="Deixe em branco para ilimitado">
+                                @error('vagas')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            {{-- TIPO DE PAGAMENTO --}}
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo_pagamento" class="form-label">Tipo de Pagamento *</label>
+                                @php
+                                    $pagamentoSelecionado = old('tipo_pagamento', $eventData['tipo_pagamento'] ?? 'gratis');
+                                @endphp
+
+                                <select id="tipo_pagamento" name="tipo_pagamento" 
+                                        class="form-select @error('tipo_pagamento') is-invalid @enderror" required>
+                                    <option value="gratis" @selected($pagamentoSelecionado == 'gratis')>Grátis</option>
+                                    <option value="pix" @selected($pagamentoSelecionado == 'pix')>Pix</option>
+                                    <option value="outros" @selected($pagamentoSelecionado == 'outros')>Outros</option>
+                                </select>
+                                @error('tipo_pagamento')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
 
-                        {{-- TIPO DE PAGAMENTO --}}
-                        <div class="col-md-6 mb-3">
-                            <label for="tipo_pagamento" class="form-label">Tipo de Pagamento *</label>
-                            @php
-                                $pagamentoSelecionado = old('tipo_pagamento', $eventData['tipo_pagamento'] ?? 'gratis');
-                            @endphp
-
-                            <select id="tipo_pagamento" name="tipo_pagamento" 
-                                    class="form-select @error('tipo_pagamento') is-invalid @enderror" required>
-                                <option value="gratis" @selected($pagamentoSelecionado == 'gratis')>Grátis</option>
-                                <option value="pix" @selected($pagamentoSelecionado == 'pix')>Pix</option>
-                                <option value="outros" @selected($pagamentoSelecionado == 'outros')>Outros</option>
-                            </select>
-                            @error('tipo_pagamento')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        {{-- DETALHES DO PAGAMENTO (aparece se escolher "outros") --}}
+                        <div class="row" id="detalhes-pagamento-box" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <label for="detalhes_pagamento" class="form-label">Detalhes do Pagamento *</label>
+                                <textarea id="detalhes_pagamento" name="detalhes_pagamento" 
+                                        class="form-control @error('detalhes_pagamento') is-invalid @enderror" 
+                                        rows="3" placeholder="Ex: Doação de alimentos, dados bancários, etc.">{{ old('detalhes_pagamento', $eventData['detalhes_pagamento'] ?? '') }}</textarea>
+                                @error('detalhes_pagamento')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
-                    </div>
 
-                    {{-- DETALHES DO PAGAMENTO (aparece se escolher "outros") --}}
-                    <div class="row" id="detalhes-pagamento-box" style="display: none;">
-                        <div class="col-md-12 mb-3">
-                            <label for="detalhes_pagamento" class="form-label">Detalhes do Pagamento *</label>
-                            <textarea id="detalhes_pagamento" name="detalhes_pagamento" 
-                                    class="form-control @error('detalhes_pagamento') is-invalid @enderror" 
-                                    rows="3" placeholder="Ex: Doação de alimentos, dados bancários, etc.">{{ old('detalhes_pagamento', $eventData['detalhes_pagamento'] ?? '') }}</textarea>
-                            @error('detalhes_pagamento')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                    </div>
                         <div class="text-end mt-4">
                             <a href="{{ route('eventos.index') }}" class="btn btn-secondary me-2">Cancelar</a>
                             <button type="submit" class="btn btn-primary">Próximo: Programação</button>
@@ -168,40 +188,40 @@
     </div>
 </div>
 
-    @push('scripts')
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const selectTipoEvento = document.getElementById('tipo_evento');
-        const onlineFields = document.getElementById('online-fields');
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const selectTipoEvento = document.getElementById('tipo_evento');
+    const onlineFields = document.getElementById('online-fields');
 
-        function toggleOnlineFields() {
-            const selected = selectTipoEvento.value;
-            if (selected === 'online' || selected === 'hibrido') {
-                onlineFields.style.display = 'block';
-            } else {
-                onlineFields.style.display = 'none';
-            }
+    function toggleOnlineFields() {
+        const selected = selectTipoEvento.value;
+        if (selected === 'online' || selected === 'hibrido') {
+            onlineFields.style.display = 'block';
+        } else {
+            onlineFields.style.display = 'none';
         }
+    }
 
-        selectTipoEvento.addEventListener('change', toggleOnlineFields);
-        toggleOnlineFields();
+    selectTipoEvento.addEventListener('change', toggleOnlineFields);
+    toggleOnlineFields();
 
-        const selectPagamento = document.getElementById('tipo_pagamento');
-        const boxDetalhes = document.getElementById('detalhes-pagamento-box');
+    const selectPagamento = document.getElementById('tipo_pagamento');
+    const boxDetalhes = document.getElementById('detalhes-pagamento-box');
 
-        function toggleDetalhesBox() {
-            if (selectPagamento.value === 'outros') {
-                boxDetalhes.style.display = 'block';
-            } else {
-                boxDetalhes.style.display = 'none';
-                document.getElementById('detalhes_pagamento').value = '';
-            }
+    function toggleDetalhesBox() {
+        if (selectPagamento.value === 'outros') {
+            boxDetalhes.style.display = 'block';
+        } else {
+            boxDetalhes.style.display = 'none';
+            document.getElementById('detalhes_pagamento').value = '';
         }
+    }
 
-        selectPagamento.addEventListener('change', toggleDetalhesBox);
-        toggleDetalhesBox(); // executa ao carregar a página (útil em caso de erro de validação)
-    });
-    </script>
-    @endpush
+    selectPagamento.addEventListener('change', toggleDetalhesBox);
+    toggleDetalhesBox(); // executa ao carregar a página (útil em caso de erro de validação)
+});
+</script>
+@endpush
 
 @endsection
