@@ -75,4 +75,54 @@ class Inscricao extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers para geração de certificado
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Dados que podem ser usados nas TAGS do certificado.
+     * Exemplo de chaves:
+     *  - nome_participante
+     *  - email_participante
+     *  - nome_evento
+     *  - data_inicio_evento
+     *  - data_termino_evento
+     *  - carga_horaria (se o evento tiver esse campo)
+     */
+    public function dadosParaCertificado(): array
+    {
+        $user   = $this->user ?? $this->usuario;
+        $evento = $this->evento;
+
+        return [
+            'nome_participante'   => $user?->name ?? '',
+            'email_participante'  => $user?->email ?? '',
+            'nome_evento'         => $evento?->nome ?? '',
+            'data_inicio_evento'  => optional($evento?->data_inicio_evento)->format('d/m/Y'),
+            'data_termino_evento' => optional($evento?->data_fim_evento)->format('d/m/Y'),
+            // ajuste se você criar um campo de carga horária no evento
+            'carga_horaria'       => $evento->carga_horaria ?? '',
+        ];
+    }
+
+    /**
+     * Faz a substituição das TAGS no corpo do modelo.
+     * Ex.: "Certificamos que {nome_participante} participou do evento {nome_evento}"
+     */
+    public function preencherModeloCertificado(string $corpo): string
+    {
+        $dados = $this->dadosParaCertificado();
+
+        $search  = [];
+        $replace = [];
+
+        foreach ($dados as $chave => $valor) {
+            $search[]  = '{' . $chave . '}';
+            $replace[] = $valor;
+        }
+
+        return str_replace($search, $replace, $corpo);
+    }
 }

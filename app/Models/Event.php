@@ -36,10 +36,13 @@ class Event extends Model
         'logomarca_path',
         'status',
         'vagas',
-        'tipo_pagamento',      
+        'tipo_pagamento',
         'detalhes_pagamento',
         'link_reuniao',
         'link_app',
+
+        // ✅ NOVO: carga horária total do evento (em horas)
+        'carga_horaria',
     ];
 
     protected $attributes = [
@@ -52,9 +55,11 @@ class Event extends Model
         'data_inicio_inscricao' => 'datetime',
         'data_fim_inscricao'    => 'datetime',
         'vagas'                 => 'integer',
+
+        // ✅ cast pra inteiro
+        'carga_horaria'         => 'integer',
     ];
 
-    
     public function setStatusAttribute($value): void
     {
         if ($value === null || $value === '') {
@@ -189,6 +194,7 @@ class Event extends Model
     /* =========================
      * Scopes
      * ========================= */
+
     public function scopeProximos($query)
     {
         return $query

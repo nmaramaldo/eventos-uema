@@ -10,17 +10,19 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\InscricaoController;
 use App\Http\Controllers\CertificadoController;
+use App\Http\Controllers\CertificadoModeloController;
 use App\Http\Controllers\PalestranteController;
 use App\Http\Controllers\NotificacaoController;
 use App\Http\Controllers\RelatorioController;
+use App\Http\Controllers\ProgramacaoController;
+use App\Http\Controllers\InscricaoProgramacaoController;
 
 // Admin
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\AuditLogController;
-use App\Http\Controllers\ProgramacaoController;
 
-// ✅ novo controller (Meus eventos)
+// “Meus eventos”
 use App\Http\Controllers\MyEventsController;
 
 /*
@@ -68,7 +70,36 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::get('/meus-eventos/{evento}/editar', [MyEventsController::class, 'edit'])->name('meus-eventos.edit');
     Route::get('/minha-jornada', [MyEventsController::class, 'jornada'])->name('meus-eventos.jornada');
 
-    // ---- Administrativo (admin/master) ----
+    /*
+    |----------------------------------------------------------------------
+    | PARTICIPANTE (não precisa de manage-users)
+    |----------------------------------------------------------------------
+    */
+
+    // Inscrições e cancelamento
+    Route::resource('inscricoes',   InscricaoController::class);
+    Route::delete('/inscricoes/{inscricao}', [InscricaoController::class, 'destroy'])
+        ->name('inscricoes.cancelar');
+
+    // Notificações
+    Route::resource('notificacoes', NotificacaoController::class);
+    Route::patch('notificacoes/{notificacao}/marcar-como-lida', [NotificacaoController::class, 'marcarComoLida'])
+        ->name('notificacoes.marcarComoLida');
+
+    // ✅ “Meus certificados” – só do usuário logado
+    Route::get('/meus-certificados', [CertificadoController::class, 'meus'])
+        ->name('certificados.meus');
+
+    // ✅ Download de certificado (participante E admin)
+    Route::get('certificados/{certificado}/download', [CertificadoController::class, 'download'])
+        ->name('certificados.download');
+
+    /*
+    |----------------------------------------------------------------------
+    | ADMIN / MASTER (manage-users)
+    |----------------------------------------------------------------------
+    */
+
     Route::middleware('can:manage-users')->group(function () {
         // Eventos (admin)
         Route::resource('eventos', EventController::class);
@@ -87,11 +118,20 @@ Route::middleware('auth')->prefix('app')->group(function () {
 
         Route::get('/palestrantes', [PalestranteController::class, 'index'])->name('palestrantes.index');
 
-        // Certificados
+        // Certificados emitidos (admin)
         Route::resource('certificados', CertificadoController::class);
+
+        // Modelos de certificado (admin) – por evento
+        Route::resource('certificado-modelos', CertificadoModeloController::class)->except(['show']);
     });
 
-    // ---- Programação (somente usuários autenticados; filtro real no controller: Admin/Master) ----
+    /*
+    |----------------------------------------------------------------------
+    | PROGRAMAÇÃO / CHECK-IN / PRESENÇA
+    |----------------------------------------------------------------------
+    */
+
+    // Programação de eventos
     Route::post('eventos/{evento}/programacao/store-ajax', [ProgramacaoController::class, 'storeAjaxForEvent'])->name('eventos.programacao.store.ajax');
     Route::get('eventos/{evento}/programacao', [ProgramacaoController::class, 'indexByEvent'])->name('eventos.programacao.index');
     Route::get('eventos/{evento}/programacao/create', [ProgramacaoController::class, 'createForEvent'])->name('eventos.programacao.create');
@@ -100,22 +140,17 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::put('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'updateByEvent'])->name('eventos.programacao.update');
     Route::delete('eventos/{evento}/programacao/{atividade}', [ProgramacaoController::class, 'destroyByEvent'])->name('eventos.programacao.destroy');
 
-    // ---- Inscrição em atividades ----
+    // Check-in geral por evento (credenciamento)
+    Route::get('/eventos/{evento}/checkin', [InscricaoController::class, 'checkinEvento'])
+        ->name('eventos.checkin');
+    Route::post('/eventos/{evento}/checkin/{inscricao}', [InscricaoController::class, 'toggleCheckinEvento'])
+        ->name('eventos.checkin.toggle');
+
+    // Inscrição em atividades (presença por atividade)
     Route::post('/programacao/{programacao}/inscrever', [InscricaoProgramacaoController::class, 'store'])->name('programacao.inscrever');
     Route::delete('/programacao/{programacao}/inscrever/{user}', [InscricaoProgramacaoController::class, 'destroy'])->name('programacao.cancelarInscricao');
     Route::post('/programacao/{programacao}/presenca', [InscricaoProgramacaoController::class, 'registrarPresenca'])->name('programacao.registrarPresenca');
     Route::delete('/programacao/{programacao}/presenca', [InscricaoProgramacaoController::class, 'removerPresenca'])->name('programacao.removerPresenca');
-
-    // ---- Área do participante/logado ----
-    Route::resource('inscricoes',   InscricaoController::class);
-    Route::resource('notificacoes', NotificacaoController::class);
-
-    Route::patch('notificacoes/{notificacao}/marcar-como-lida', [NotificacaoController::class, 'marcarComoLida'])
-        ->name('notificacoes.marcarComoLida');
-
-    Route::delete('/inscricoes/{inscricao}', [InscricaoController::class, 'destroy'])
-        ->name('inscricoes.cancelar')
-        ->middleware('auth');
 
     // Logs de auditoria
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
@@ -125,7 +160,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN
+| ADMIN (área /admin)
 |--------------------------------------------------------------------------
 */
 
@@ -146,8 +181,8 @@ Route::middleware(['auth', 'can:manage-users'])
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->prefix('admin')->group(function () {
-    Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');        
-    Route::get('/relatorios/eventos', [RelatorioController::class, 'listaEventos'])->name('relatorios.eventos');    
+    Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');
+    Route::get('/relatorios/eventos', [RelatorioController::class, 'listaEventos'])->name('relatorios.eventos');
     Route::get('/relatorios/eventos/{evento}', [RelatorioController::class, 'showEvento'])->name('relatorios.evento.show');
     Route::get('/relatorios/eventos/{evento}/pdf', [RelatorioController::class, 'exportarPDF'])->name('relatorios.evento.pdf');
 });

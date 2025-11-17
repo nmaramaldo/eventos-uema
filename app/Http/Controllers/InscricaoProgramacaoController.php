@@ -16,16 +16,21 @@ class InscricaoProgramacaoController extends Controller
 
         $user = User::find($request->user_id);
 
-        $programacao->users()->attach($user->id);
+        // ✅ evita erro se já estiver inscrito na atividade
+        $programacao->users()->syncWithoutDetaching([$user->id]);
 
-        return redirect()->back()->with('success', 'Inscrição na atividade realizada com sucesso!');
+        return redirect()
+            ->back()
+            ->with('success', 'Inscrição na atividade realizada com sucesso!');
     }
 
     public function destroy(Programacao $programacao, User $user)
     {
         $programacao->users()->detach($user->id);
 
-        return redirect()->back()->with('success', 'Inscrição na atividade cancelada com sucesso!');
+        return redirect()
+            ->back()
+            ->with('success', 'Inscrição na atividade cancelada com sucesso!');
     }
 
     public function registrarPresenca(Request $request, Programacao $programacao)
@@ -36,9 +41,12 @@ class InscricaoProgramacaoController extends Controller
 
         $user = User::find($request->user_id);
 
+        // ✅ check-in: marca presente = true na pivot
         $programacao->users()->updateExistingPivot($user->id, ['presente' => true]);
 
-        return redirect()->back()->with('success', 'Presença registrada com sucesso!');
+        return redirect()
+            ->back()
+            ->with('success', 'Presença registrada com sucesso!');
     }
 
     public function removerPresenca(Request $request, Programacao $programacao)
@@ -49,8 +57,11 @@ class InscricaoProgramacaoController extends Controller
 
         $user = User::find($request->user_id);
 
+        // ✅ remove check-in: presente = false
         $programacao->users()->updateExistingPivot($user->id, ['presente' => false]);
 
-        return redirect()->back()->with('success', 'Presença removida com sucesso!');
+        return redirect()
+            ->back()
+            ->with('success', 'Presença removida com sucesso!');
     }
 }

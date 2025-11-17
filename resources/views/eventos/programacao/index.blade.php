@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app') 
 @section('title', 'Programação - ' . $evento->nome)
 
 @section('content')
@@ -6,11 +6,17 @@
         <div class="row mb-4 align-items-center">
             <div class="col-md-8">
                 <h3>Programação — {{ $evento->nome }}</h3>
-                <p class="text-muted">Gerencie as atividades (palestras, mesas, oficinas...)</p>
+                <p class="text-muted">
+                    Gerencie as atividades (palestras, mesas, oficinas...) deste evento.
+                </p>
             </div>
             <div class="col-md-4 text-end">
-                <a href="{{ route('eventos.programacao.create', $evento) }}" class="btn btn-primary">Adicionar atividade</a>
-                <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-secondary">Voltar</a>
+                <a href="{{ route('eventos.programacao.create', $evento) }}" class="btn btn-primary">
+                    Adicionar atividade
+                </a>
+                <a href="{{ route('eventos.edit', $evento) }}" class="btn btn-secondary">
+                    Voltar
+                </a>
             </div>
         </div>
 
@@ -47,19 +53,33 @@
                                 <td>{{ $i->local?->nome ?? ($i->localidade ?? '—') }}</td>
                                 <td class="text-end">
                                     <a class="btn btn-sm btn-outline-secondary"
-                                        href="{{ route('eventos.programacao.edit', ['evento' => $evento->id, 'atividade' => $i->id]) }}">Editar</a>
-                                    <form
-                                        action="{{ route('eventos.programacao.destroy', ['evento' => $evento->id, 'atividade' => $i->id]) }}"
-                                        method="post" class="d-inline">
-                                        @csrf @method('DELETE')
+                                       href="{{ route('eventos.programacao.edit', [
+                                            'evento'    => $evento->id,
+                                            'atividade' => $i->id
+                                       ]) }}">
+                                        Editar
+                                    </a>
+
+                                    <form action="{{ route('eventos.programacao.destroy', [
+                                                'evento'    => $evento->id,
+                                                'atividade' => $i->id
+                                            ]) }}"
+                                          method="post"
+                                          class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
                                         <button class="btn btn-sm btn-danger"
-                                            onclick="return confirm('Remover?')">Excluir</button>
+                                                onclick="return confirm('Remover esta atividade?')">
+                                            Excluir
+                                        </button>
                                     </form>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-3">Nenhuma atividade adicionada.</td>
+                                <td colspan="5" class="text-center text-muted py-3">
+                                    Nenhuma atividade adicionada.
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>

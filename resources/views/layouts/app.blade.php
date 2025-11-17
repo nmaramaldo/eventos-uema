@@ -18,7 +18,7 @@
   {{-- Navbar ÚNICA --}}
   @include('layouts.navigation')
 
-  {{-- ✅ permite a view ajustar o padding do main --}}
+  {{-- permite a view ajustar o padding do main --}}
   <main class="@yield('main_class','py-4')">
     @yield('content')
   </main>

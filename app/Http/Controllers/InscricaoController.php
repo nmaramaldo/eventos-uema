@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateInscricaoRequest;
 use App\Models\Event;
 use App\Models\Inscricao;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 
 class InscricaoController extends Controller
 {
@@ -100,7 +101,46 @@ class InscricaoController extends Controller
         
         $inscricao->delete();
         
-        // ✅ MENSAGEM: Melhorada para maior clareza.
         return redirect()->route('inscricoes.index')->with('success', 'Inscrição cancelada com sucesso!');
+    }
+
+    /**
+     * 🔹 Tela de credenciamento (check-in geral do evento)
+     * Lista todos os inscritos do evento para o coordenador/admin.
+     */
+    public function checkinEvento(Event $evento)
+    {
+        // Quem pode credenciar? Mesma regra de "update" do evento.
+        $this->authorize('update', $evento);
+
+        $inscricoes = Inscricao::with('user')
+            ->where('evento_id', $evento->id)
+            ->orderBy('data_inscricao')
+            ->paginate(50);
+
+        return view('eventos.checkin', compact('evento', 'inscricoes'));
+    }
+
+    /**
+     * 🔹 Alterna o status de presença de uma inscrição nesse evento.
+     */
+    public function toggleCheckinEvento(Event $evento, Inscricao $inscricao, Request $request)
+    {
+        $this->authorize('update', $evento);
+
+        // Segurança extra: garantir que essa inscrição é do evento certo
+        if ($inscricao->evento_id !== $evento->id) {
+            abort(404);
+        }
+
+        $inscricao->presente = !$inscricao->presente;
+        $inscricao->save();
+
+        return redirect()
+            ->back()
+            ->with(
+                'success',
+                $inscricao->presente ? 'Check-in realizado com sucesso!' : 'Check-in removido com sucesso!'
+            );
     }
 }
