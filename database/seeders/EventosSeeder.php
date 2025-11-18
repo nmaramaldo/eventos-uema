@@ -4,11 +4,21 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Event;
+use App\Models\User;
+use App\Models\Inscricao;
 
 class EventosSeeder extends Seeder
 {
     public function run()
     {
+        // -------------------------------------------------
+        // 1) Criar usuários que serão inscritos nos eventos
+        // -------------------------------------------------
+        $usuarios = User::factory(40)->create();
+
+        // -------------------------------------------------
+        // 2) Eventos específicos
+        // -------------------------------------------------
         $eventosEspecificos = [
             [
                 'nome' => 'Workshop de Laravel Avançado',
@@ -26,6 +36,7 @@ class EventosSeeder extends Seeder
                 'vagas' => 40,
                 'link_reuniao' => null,
                 'link_app' => 'https://meet.google.com/abc-def-ghi',
+    
             ],
             [
                 'nome' => 'Conferência Anual de Tecnologia',
@@ -43,19 +54,56 @@ class EventosSeeder extends Seeder
                 'vagas' => 500,
                 'link_reuniao' => 'https://zoom.us/j/123456789',
                 'link_app' => 'https://eventapp.com/conferencia-tech',
+            
             ],
         ];
 
+        // Insere eventos específicos
         foreach ($eventosEspecificos as $evento) {
             Event::create($evento);
         }
 
-        // Criar eventos aleatórios
-        Event::factory()->count(8)->gratuito()->presencial()->publicado()->create();
-        Event::factory()->count(8)->comPix()->online()->ativo()->create();
-        Event::factory()->count(7)->comPagamentoPersonalizado()->hibrido()->publicado()->create();
-        Event::factory()->count(5)->rascunho()->create();
+        // -------------------------------------------------
+        // 3) Criar eventos gerados pelo factory
+        // -------------------------------------------------
+        $eventos = collect();
 
-        $this->command->info('30 eventos criados com sucesso!');
+        $eventos = $eventos->merge(
+            Event::factory()->count(8)->gratuito()->presencial()->publicado()->create()
+        );
+        $eventos = $eventos->merge(
+            Event::factory()->count(8)->comPix()->online()->ativo()->create()
+        );
+        $eventos = $eventos->merge(
+            Event::factory()->count(7)->comPagamentoPersonalizado()->hibrido()->publicado()->create()
+        );
+        $eventos = $eventos->merge(
+            Event::factory()->count(5)->rascunho()->create()
+        );
+
+       
+        // Pega também os eventos específicos que já têm imagem
+        $todosEventos = Event::all();
+
+        // -------------------------------------------------
+        // 5) Criar inscrições para todos os eventos
+        // -------------------------------------------------
+       foreach ($todosEventos as $evento) {
+
+    // garante pelo menos 30 inscrições por evento
+    $inscritos = $usuarios->shuffle()->take(30);
+
+        foreach ($inscritos as $user) {
+            Inscricao::create([
+                'user_id'  => $user->id,
+                'evento_id' => $evento->id,
+                'status'   => 'confirmada',
+            ]);
+        }
     }
+
+    $this->command->info('Eventos e inscrições criados com sucesso (mínimo 30 por evento)!');
+
+    }
+    
 }

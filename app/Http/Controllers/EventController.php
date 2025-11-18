@@ -101,6 +101,10 @@ class EventController extends Controller
         // Atualiza todos os campos EXCETO status primeiro
         $evento->fill(collect($data)->except(['status'])->all());
         $evento->save();
+        if ($request->hasFile('logomarca')) {
+            $path = $request->file('logomarca')->store('banners/' . $evento->id, 'public');
+            $evento->update(['logomarca_path' => $path]);
+        }
 
         // --- NORMALIZA o status pedido (aceita várias formas) ---
         $statusRaw = $data['status'] ?? null;

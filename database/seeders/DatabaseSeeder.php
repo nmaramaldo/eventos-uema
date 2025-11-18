@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         // 1) Usuário MASTER (sempre)
         $this->call([
-            //MasterUserSeeder::class,
+            MasterUserSeeder::class,
             EventosSeeder::class,
         ]);
 
