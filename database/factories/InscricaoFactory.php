@@ -15,7 +15,7 @@ class InscricaoFactory extends Factory
     {
         return [
             'user_id'  => User::factory(),
-            'event_id' => Event::factory(),
+            'evento_id' => Event::factory(),
             'status'   => $this->faker->randomElement(['pendente', 'confirmada', 'cancelada']),
             'created_at' => now(),
             'updated_at' => now(),

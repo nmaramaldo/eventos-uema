@@ -3,16 +3,27 @@
 .env
 .env.backup
 .env.production
+.env.*
 .phpactor.json
 .phpunit.result.cache
+
+# IDEs
 /.fleet
 /.idea
 /.nova
 /.phpunit.cache
 /.vscode
 /.zed
+
+# Auth
 /auth.json
-/node_modules
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Laravel
 /public/build
 /public/hot
 /public/storage
@@ -22,16 +33,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
-# Laravel
-/vendor
-/node_modules
-/public/storage
-.env
-.env.*
-# Logs e caches
-npm-debug.log*
-yarn-error.log*
-/storage/*.key
-/.idea
-/.vscode
-/.DS_Storenode_modules/
+
+# OS files
+.DS_Store
