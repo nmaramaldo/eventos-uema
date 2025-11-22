@@ -110,9 +110,8 @@
                             >
                             @error('carga_horaria')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             <small class="text-muted">
-                                Esse valor será usado nos certificados (tag <code>{carga_horaria}</code>).
+                                Esse valor será usado nos certificados.
                             </small>
-                        </div>
 
                         {{-- DATAS DE INSCRIÇÃO --}}
                         <div class="row">

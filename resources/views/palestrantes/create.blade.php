@@ -3,18 +3,12 @@
 
 @section('content')
     @php
-        // 1) Garante que temos $evento (Model ou ID) e sempre extrai um ID
-        $evento = $evento ?? request()->route('evento'); // pode ser Model ou string
+        $evento = $evento ?? request()->route('evento');
         $eventoId = is_object($evento) ? $evento->getKey() ?? ($evento->id ?? null) : $evento;
+        if (!$eventoId) { $eventoId = old('evento_id'); }
 
-        // 2) Se por algum motivo ainda não tiver, evita quebrar e deixa visível o problema
-        if (!$eventoId) {
-            $eventoId = old('evento_id');
-        }
-
-        // 3) Action totalmente robusta (sem route()) para não estourar Missing parameter
-        $storeUrl = url('app/eventos/' . $eventoId . '/palestrantes'); // POST
-        $indexUrl = url('app/eventos/' . $eventoId . '/palestrantes'); // GET (lista)
+        $storeUrl = url('app/eventos/' . $eventoId . '/palestrantes');
+        $indexUrl = url('app/eventos/' . $eventoId . '/palestrantes');
     @endphp
 
     <div class="container py-5">
@@ -26,6 +20,7 @@
                     </div>
 
                     <div class="card-body">
+                        {{-- 1. ERROS DO LARAVEL (BACK-END) --}}
                         @if ($errors->any())
                             <div class="alert alert-danger">
                                 <div class="fw-semibold mb-2">Ops! Corrija os erros abaixo:</div>
@@ -37,7 +32,12 @@
                             </div>
                         @endif
 
-                        {{-- mantenho um hidden para o backend se precisar --}}
+                        {{-- 2. ERROS DO JAVASCRIPT (FRONT-END) - Igual ao do Laravel --}}
+                        <div id="js-error-alert" class="alert alert-danger" style="display: none;">
+                            <div class="fw-semibold mb-2">Ops! Corrija os erros abaixo:</div>
+                            <ul class="mb-0" id="js-error-list"></ul>
+                        </div>
+
                         <form action="{{ $storeUrl }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="evento_id" value="{{ $eventoId }}">
@@ -62,8 +62,7 @@
                                     <div class="col-md-6 mb-2">
                                         <label class="form-label">Foto (opcional)</label>
                                         <div id="new_speaker_foto_wrapper">
-                                            <input type="file" id="new_speaker_foto" class="form-control"
-                                                accept="image/*">
+                                            <input type="file" id="new_speaker_foto" class="form-control" accept="image/*">
                                         </div>
                                         <small class="text-muted">Máx. 2MB</small>
                                     </div>
@@ -75,8 +74,7 @@
                                                 <option value="{{ $at->id }}">{{ $at->titulo }}</option>
                                             @endforeach
                                         </select>
-                                        <small class="text-muted">Segure Ctrl (Windows) ou ⌘ (Mac) para múltiplas
-                                            seleções.</small>
+                                        <small class="text-muted">Segure Ctrl (Windows) ou ⌘ (Mac) para múltiplas seleções.</small>
                                     </div>
                                 </div>
 
@@ -89,25 +87,15 @@
                             <div id="speakers-container">
                                 <p id="no-speakers-text" class="text-muted">Nenhum palestrante adicionado ainda.</p>
                             </div>
-                            @php
-                                // Verifica se o evento já tem palestrantes cadastrados
-                                $hasPalestrantes = $evento->palestrantes()->exists();
-                                $nextRoute = $hasPalestrantes
-                                    ? route('eventos.palestrantes.index', $evento) // Já tem palestrantes: volta para lista
-                                    : route('dashboard'); // Não tem: vai para dashboard (ou próxima etapa)
 
-                                $btnText = $hasPalestrantes
-                                    ? 'Salvar e Voltar para Lista'
-                                    : 'Salvar e Finalizar Cadastro';
+                            @php
+                                $hasPalestrantes = $evento->palestrantes()->exists();
+                                $btnText = $hasPalestrantes ? 'Salvar e Voltar para Lista' : 'Salvar e Finalizar Cadastro';
                             @endphp
 
                             <div class="d-flex justify-content-between mt-4">
                                 <a href="{{ $indexUrl }}" class="btn btn-outline-secondary">← Voltar</a>
-
-                                {{-- Botão único que salva E redireciona --}}
-                                <button type="submit" class="btn btn-primary">
-                                    {{ $btnText }}
-                                </button>
+                                <button type="submit" class="btn btn-primary">{{ $btnText }}</button>
                             </div>
                         </form>
 
@@ -132,13 +120,16 @@
         </div>
     </div>
 
-    {{-- Script inline para não depender de @stack --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const addBtn = document.getElementById('add_speaker_btn');
             const cont = document.getElementById('speakers-container');
             const tpl = document.getElementById('speaker-template');
             const empty = document.getElementById('no-speakers-text');
+            
+            // Elementos de erro JS
+            const errorBox = document.getElementById('js-error-alert');
+            const errorList = document.getElementById('js-error-list');
 
             const iNome = document.getElementById('new_speaker_name');
             const iEmail = document.getElementById('new_speaker_email');
@@ -156,16 +147,40 @@
             }
 
             addBtn.addEventListener('click', function() {
-                try {
-                    const nome = (iNome?.value || '').trim();
-                    const email = (iEmail?.value || '').trim();
-                    const bio = (iBio?.value || '').trim();
-                    if (!nome) {
-                        alert('O nome do palestrante é obrigatório.');
-                        iNome.focus();
-                        return;
-                    }
+                // Limpa erros anteriores
+                errorBox.style.display = 'none';
+                errorList.innerHTML = '';
+                let errors = [];
 
+                const nome = (iNome?.value || '').trim();
+                const email = (iEmail?.value || '').trim();
+                const bio = (iBio?.value || '').trim();
+
+                // VALIDAÇÃO
+                if (!nome) {
+                    errors.push('O campo nome é obrigatório.');
+                }
+                if (!email) {
+                    errors.push('O campo e-mail é obrigatório.');
+                }
+
+                // Se houver erros, mostra a caixa e para
+                if (errors.length > 0) {
+                    errors.forEach(err => {
+                        const li = document.createElement('li');
+                        li.textContent = err;
+                        errorList.appendChild(li);
+                    });
+                    errorBox.style.display = 'block';
+                    
+                    // Foca no primeiro campo com erro
+                    if (!nome) iNome.focus();
+                    else if (!email) iEmail.focus();
+                    
+                    return;
+                }
+
+                try {
                     const atvs = iAtv ?
                         Array.from(iAtv.selectedOptions).map(o => ({
                             id: o.value,
@@ -176,13 +191,12 @@
                     const el = frag.querySelector('.speaker-row');
                     if (!el) return;
 
-                    el.querySelector('[name="palestrantes[INDEX][nome]"]').name =
-                        `palestrantes[${idx}][nome]`;
-                    el.querySelector('[name="palestrantes[INDEX][email]"]').name =
-                        `palestrantes[${idx}][email]`;
-                    el.querySelector('[name="palestrantes[INDEX][biografia]"]').name =
-                        `palestrantes[${idx}][biografia]`;
+                    // Atualiza os names dos inputs hidden
+                    el.querySelector('[name="palestrantes[INDEX][nome]"]').name = `palestrantes[${idx}][nome]`;
+                    el.querySelector('[name="palestrantes[INDEX][email]"]').name = `palestrantes[${idx}][email]`;
+                    el.querySelector('[name="palestrantes[INDEX][biografia]"]').name = `palestrantes[${idx}][biografia]`;
 
+                    // Preenche os valores
                     el.querySelector(`[name="palestrantes[${idx}][nome]"]`).value = nome;
                     el.querySelector(`[name="palestrantes[${idx}][email]"]`).value = email;
                     el.querySelector(`[name="palestrantes[${idx}][biografia]"]`).value = bio;

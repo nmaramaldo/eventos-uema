@@ -146,7 +146,8 @@ class EventController extends Controller
             $evento->refresh();
         }
 
-        return redirect()->route('eventos.show', $evento)->with('success', 'Evento atualizado com sucesso!');
+        return redirect()->route('eventos.programacao.index', $evento)
+                 ->with('success', 'Informações atualizadas! Agora gerencie a programação.');
     }
 
     public function destroy(Event $evento)

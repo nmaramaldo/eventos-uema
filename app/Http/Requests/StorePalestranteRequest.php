@@ -16,7 +16,7 @@ class StorePalestranteRequest extends FormRequest
         return [
             'palestrantes'                 => ['required', 'array', 'min:1'],
             'palestrantes.*.nome'         => ['required', 'string', 'max:255'],
-            'palestrantes.*.email'        => ['nullable', 'email', 'max:255'],
+            'palestrantes.*.email'        => ['required', 'email', 'max:255'],
             'palestrantes.*.biografia'    => ['nullable', 'string'],
             'palestrantes.*.foto'         => ['nullable', 'image', 'max:2048'],
             'palestrantes.*.atividades'   => ['nullable', 'array'],
