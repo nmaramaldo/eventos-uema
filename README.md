@@ -78,8 +78,8 @@ Siga estes passos para configurar o projeto localmente.
 
 1. Clone o repositório: `[https://github.com/nmaramaldo/eventos-uema.git](https://github.com/nmaramaldo/eventos-uema.git)`
 `cd eventos-uema`
-2. Instale as dependências: `composer install` 
-3. Configure o `.env`: `cp .env.example .env` e `php artisan key:generate` 
+2. Instale as dependências: `npm install` 
+3. Configure o `.env`: `cp .env.example .env` 
 4. Crie o arquivo do banco: `touch database/database.sqlite` 
 5. Rode as migrations e seeders: `php artisan migrate` 
 6. Inicie o servidor: `php artisan serve`
