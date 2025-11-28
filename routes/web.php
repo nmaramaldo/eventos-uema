@@ -120,7 +120,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
 
         // Certificados emitidos (admin)
         Route::resource('certificados', CertificadoController::class);
-
+        
         // Modelos de certificado (admin) – por evento
         Route::resource('certificado-modelos', CertificadoModeloController::class)->except(['show']);
     });

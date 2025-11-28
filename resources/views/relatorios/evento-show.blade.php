@@ -57,7 +57,7 @@
                             <td class="px-3">{{ $inscricao->user->email ?? 'N/A' }}</td>
                             <td class="px-3">{{ $inscricao->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-3">
-                                @if($inscricao->checkin_at)
+                                @if($inscricao->presente)
                                     <span class="badge bg-success">Presente</span>
                                 @else
                                     <span class="badge bg-secondary">Ausente</span>

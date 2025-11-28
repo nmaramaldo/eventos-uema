@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+participante<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
@@ -72,7 +72,7 @@
                     <td>{{ $inscricao->user->email ?? 'N/A' }}</td>
                     <td>{{ $inscricao->created_at->format('d/m/Y H:i') }}</td>
                     <td>
-                        @if($inscricao->checkin_at)
+                        @if($inscricao->presente)
                             <span>Presente</span>
                         @else
                             <span>Ausente</span>
