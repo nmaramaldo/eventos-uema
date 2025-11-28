@@ -22,6 +22,51 @@
         </a>
     </div>
 
+    {{-- Card de Geração de Certificados --}}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Gerar Certificados em Massa</h5>
+        </div>
+        <div class="card-body">
+            <p class="card-text">
+                Selecione um modelo de certificado e clique em "Gerar" para emitir os certificados para todos os
+                participantes com check-in realizado (presentes) neste evento.
+            </p>
+            <p class="text-muted small">
+                Atenção: Apenas participantes marcados como "Presente" receberão o certificado. Certificados que já foram emitidos para um participante com o mesmo modelo não serão gerados novamente.
+            </p>
+
+            @if($modelos->count() > 0)
+                <form action="{{ route('eventos.certificados.gerarTodos', $evento) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja gerar os certificados para todos os presentes? Esta ação não pode ser desfeita.');">
+                    @csrf
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <label for="modelo_id" class="form-label">Modelo de Certificado</label>
+                            <select name="modelo_id" id="modelo_id" class="form-select" required>
+                                <option value="">Selecione um modelo</option>
+                                @foreach($modelos as $modelo)
+                                    <option value="{{ $modelo->id }}">{{ $modelo->titulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-patch-check-fill me-2"></i>
+                                Gerar para todos os presentes
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            @else
+                <div class="alert alert-warning mb-0">
+                    Não há modelos de certificado publicados para este evento.
+                    <a href="{{ route('certificado-modelos.create', ['evento_id' => $evento->id]) }}" class="alert-link">Crie um modelo de certificado</a>
+                    primeiro.
+                </div>
+            @endif
+        </div>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-header">
             <div class="row g-2 align-items-center">

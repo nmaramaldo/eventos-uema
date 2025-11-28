@@ -6,6 +6,7 @@ use App\Http\Requests\StoreInscricaoRequest;
 use App\Http\Requests\UpdateInscricaoRequest;
 use App\Models\Event;
 use App\Models\Inscricao;
+use App\Models\CertificadoModelo;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
@@ -118,7 +119,13 @@ class InscricaoController extends Controller
             ->orderBy('data_inscricao')
             ->paginate(50);
 
-        return view('eventos.checkin', compact('evento', 'inscricoes'));
+        // Adicionar esta linha para buscar os modelos
+        $modelos = CertificadoModelo::doEvento($evento->id)
+            ->publicados()
+            ->orderBy('titulo')
+            ->get();
+
+        return view('eventos.checkin', compact('evento', 'inscricoes', 'modelos'));
     }
 
     /**
