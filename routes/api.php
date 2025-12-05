@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\CheckinController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', function () {
     return response()->json(['ok' => true]);
 });
+
+// Autenticado: somente admin pode fazer check-in
+Route::middleware(['auth', 'can:manage-users'])->group(function () {
+    Route::post('/checkin', [CheckinController::class, 'processCheckin']);
+});
+
 
 // Lista fake só para testar
 Route::get('/events', function () {

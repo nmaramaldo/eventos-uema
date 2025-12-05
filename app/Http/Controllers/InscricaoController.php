@@ -106,6 +106,17 @@ class InscricaoController extends Controller
     }
 
     /**
+     * Mostra o QR Code para check-in do participante.
+     */
+    public function showQrCode(Inscricao $inscricao)
+    {
+        // ✅ AUTORIZAÇÃO: Chama o método 'view' da InscricaoPolicy.
+        $this->authorize('view', $inscricao);
+
+        return view('inscricoes.qrcode', compact('inscricao'));
+    }
+
+    /**
      * 🔹 Tela de credenciamento (check-in geral do evento)
      * Lista todos os inscritos do evento para o coordenador/admin.
      */

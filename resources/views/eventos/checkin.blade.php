@@ -17,9 +17,15 @@
             <h2 class="mb-0">Check-in — {{ $evento->nome }}</h2>
             <p class="text-muted mb-0">Credenciamento geral dos participantes inscritos no evento.</p>
         </div>
-        <a href="{{ route('eventos.index') }}" class="btn btn-outline-secondary ms-auto">
-            Voltar para eventos
-        </a>
+        <div class="ms-auto d-flex gap-2">
+            <a href="{{ route('admin.eventos.checkinScanner', $evento) }}" class="btn btn-primary">
+                <i class="bi bi-qr-code-scan me-2"></i>
+                Check-in por QR Code
+            </a>
+            <a href="{{ route('eventos.index') }}" class="btn btn-outline-secondary">
+                Voltar para eventos
+            </a>
+        </div>
     </div>
 
     {{-- Card de Geração de Certificados --}}

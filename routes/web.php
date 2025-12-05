@@ -90,6 +90,10 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::get('/meus-certificados', [CertificadoController::class, 'meus'])
         ->name('certificados.meus');
 
+    // ✅ QR Code do participante
+    Route::get('/inscricoes/{inscricao}/qrcode', [InscricaoController::class, 'showQrCode'])
+        ->name('inscricoes.qrcode');
+
     // ✅ Download de certificado (participante E admin)
     Route::get('certificados/{certificado}/download', [CertificadoController::class, 'download'])
         ->name('certificados.download');
@@ -171,6 +175,10 @@ Route::middleware(['auth', 'can:manage-users'])
     ->name('admin.')
     ->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+
+        // ✅ Rota para o scanner de QR Code
+        Route::get('/eventos/{evento}/checkin-scanner', [\App\Http\Controllers\Admin\CheckinController::class, 'scanner'])->name('eventos.checkinScanner');
+
         Route::resource('usuarios', UserAdminController::class)->except(['show', 'destroy']);
         Route::patch('usuarios/{user}/ativar',    [UserAdminController::class, 'ativar'])->name('usuarios.ativar');
         Route::patch('usuarios/{user}/desativar', [UserAdminController::class, 'desativar'])->name('usuarios.desativar');
