@@ -8,10 +8,11 @@ use App\Models\Certificado;
 use App\Models\CertificadoModelo;
 use App\Models\Inscricao;
 use App\Models\Event;
+use App\Jobs\GenerateCertificatePdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Barryvdh\DomPDF\Facade\Pdf;            // ✅ DomPDF
-use Illuminate\Support\Facades\Storage;     // ✅ para salvar o arquivo
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 
 class CertificadoController extends Controller
 {
@@ -119,8 +120,8 @@ class CertificadoController extends Controller
         }
 
         // ✅ URL OPCIONAL, MAS EVITANDO NULL NA COLUNA NOT NULL
-        if (!array_key_exists('url_certificado', $data) || $data['url_certificado'] === null) {
-            $data['url_certificado'] = '';
+        if (!array_key_exists('path', $data) || $data['path'] === null) {
+            $data['path'] = '';
         }
 
         // evitar duplicado para mesma inscrição + modelo
@@ -136,12 +137,12 @@ class CertificadoController extends Controller
 
         $certificado = Certificado::create($data);
 
-        // ✅ Refatorado: chama o método privado para gerar o PDF
-        $this->_gerarPdfCertificado($certificado);
+        // ✅ Refatorado: despacha o job para gerar o PDF em background
+        GenerateCertificatePdf::dispatch($certificado);
 
         return redirect()
             ->route('certificados.index')
-            ->with('success', 'Certificado criado e PDF gerado com sucesso!');
+            ->with('success', 'Certificado solicitado. O PDF será gerado em breve.');
     }
 
     public function show(Certificado $certificado)
@@ -173,8 +174,8 @@ class CertificadoController extends Controller
         }
 
         // mesma proteção da store
-        if (!array_key_exists('url_certificado', $data) || $data['url_certificado'] === null) {
-            $data['url_certificado'] = '';
+        if (!array_key_exists('path', $data) || $data['path'] === null) {
+            $data['path'] = '';
         }
 
         $certificado->update($data);
@@ -186,6 +187,11 @@ class CertificadoController extends Controller
 
     public function destroy(Certificado $certificado)
     {
+        // Opcional: deletar o arquivo PDF do storage
+        if ($certificado->path && Storage::disk('public')->exists($certificado->path)) {
+            Storage::disk('public')->delete($certificado->path);
+        }
+        
         $certificado->delete();
 
         return redirect()
@@ -236,18 +242,18 @@ class CertificadoController extends Controller
                 'data_emissao' => now(),
                 'hash_verificacao' => (string) Str::uuid(),
                 'tipo' => $modelo->slug_tipo,
-                'url_certificado' => '', // temporário
+                'path' => '', // temporário
             ];
 
             $certificado = Certificado::create($dadosCertificado);
 
-            // ✅ Refatorado: chama o método privado para gerar o PDF
-            $this->_gerarPdfCertificado($certificado);
+            // ✅ Refatorado: despacha o job para gerar o PDF
+            GenerateCertificatePdf::dispatch($certificado);
 
             $criados++;
         }
 
-        $message = "Emissão em massa concluída: {$criados} certificados novos emitidos.";
+        $message = "Emissão em massa solicitada: {$criados} certificados estão sendo gerados em fila.";
         if ($ignorados > 0) {
             $message .= " {$ignorados} foram ignorados por já existirem.";
         }
@@ -255,33 +261,6 @@ class CertificadoController extends Controller
         return redirect()
             ->back()
             ->with('success', $message);
-    }
-
-    /**
-     * Gera o PDF de um certificado, salva em disco e atualiza o registro no banco.
-     *
-     * @param Certificado $certificado
-     * @return void
-     */
-    private function _gerarPdfCertificado(Certificado $certificado): void
-    {
-        // Garante que as relações necessárias estão carregadas
-        $certificado->loadMissing('inscricao.user', 'inscricao.evento', 'modelo');
-
-        // Gera o PDF com DomPDF
-        $pdf = Pdf::loadView('certificados.pdf', [
-            'certificado' => $certificado,
-        ])->setPaper('a4', 'landscape');
-
-        // Caminho do arquivo
-        $path = 'certificados/' . $certificado->id . '.pdf';
-
-        // Salva o arquivo físico
-        Storage::disk('public')->put($path, $pdf->output());
-
-        // Salva a URL pública no registro do certificado
-        $certificado->url_certificado = Storage::url($path);
-        $certificado->save();
     }
 
     /**
@@ -300,14 +279,23 @@ class CertificadoController extends Controller
         }
 
         // 2) Caminho do arquivo no disco "public"
-        $path = 'certificados/' . $certificado->id . '.pdf';
-
-        if (!Storage::disk('public')->exists($path)) {
-            abort(404, 'Arquivo do certificado não encontrado.');
+        if (empty($certificado->path)) {
+            abort(404, 'O arquivo do certificado ainda não foi gerado. Tente novamente em alguns instantes.');
         }
 
+        if (!Storage::disk('public')->exists($certificado->path)) {
+            // Tenta gerar o PDF se ele não existir
+            try {
+                GenerateCertificatePdf::dispatchSync($certificado);
+                // Recarrega o modelo para obter o path atualizado
+                $certificado->refresh();
+            } catch (\Exception $e) {
+                abort(500, 'Não foi possível gerar ou encontrar o arquivo do certificado.');
+            }
+        }
+        
         // 3) Faz o download do arquivo
-        $nomeArquivo = 'certificado-' . $certificado->id . '.pdf';
-        return Storage::disk('public')->download($path, $nomeArquivo);
+        $nomeArquivo = 'certificado-' . Str::slug($certificado->inscricao->evento->nome) . '-' . Str::slug($certificado->inscricao->user->name) . '.pdf';
+        return Storage::disk('public')->download($certificado->path, $nomeArquivo);
     }
 }

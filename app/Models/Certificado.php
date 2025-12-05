@@ -21,7 +21,7 @@ class Certificado extends Model
         'inscricao_id',
         'modelo_id',
         'tipo',             // participante / palestrante / organizador
-        'url_certificado',
+        'path',
         'data_emissao',
         'hash_verificacao',
     ];
