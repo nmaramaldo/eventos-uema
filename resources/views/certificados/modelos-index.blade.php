@@ -8,6 +8,15 @@
         // pega o evento_id da URL (quando você vem do botão "Certificados" em Gerenciar Eventos)
         $eventoId   = request('evento_id');
         $eventoParam = $eventoId ? ['evento_id' => $eventoId] : [];
+
+       
+        // Tenta recuperar o evento atual para manter o contexto nos links
+        $eventoAtual = $evento ?? null;
+        if (!$eventoAtual && request('evento_id')) {
+            $eventoAtual = \App\Models\Event::find(request('evento_id'));
+        }
+        $eventoParam = $eventoAtual ? ['evento_id' => $eventoAtual->id] : [];
+    
     @endphp
 
     {{-- Abas: Modelos / Emitir certificados --}}
@@ -23,6 +32,17 @@
                 Emitir certificados
             </a>
         </li>
+
+        {{-- Aba 3: Certificados Gerados --}}
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('certificados.index', $eventoParam) }}">
+                Certificados gerados
+                @if($eventoAtual)
+                    <small class="text-muted ms-1">({{ $eventoAtual->nome }})</small>
+                @endif
+            </a>
+        </li>
+
     </ul>
 
     <div class="card shadow-sm">
@@ -94,8 +114,5 @@
                 </tbody>
             </table>
         </div>
-    </div>
-
-    <p class="text-center text-muted mt-4">Versão: 1.0-rc.1</p>
-</div>
+    
 @endsection

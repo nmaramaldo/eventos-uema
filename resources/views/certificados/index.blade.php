@@ -26,12 +26,7 @@
                 </p>
             </div>
 
-            {{-- 🔒 Só admin/master pode ver o botão de gerar --}}
-            @can('manage-users')
-                <a href="{{ route('certificados.create') }}" class="btn btn-primary ms-auto">
-                    Gerar certificado
-                </a>
-            @endcan
+           
         </div>
 
         <div class="card-body p-0">

@@ -16,17 +16,31 @@ use Illuminate\Support\Facades\Storage;
 
 class CertificadoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $certificados = Certificado::with([
+        $query = Certificado::with([
             'inscricao.evento',
             'inscricao.user',
             'modelo',
-        ])
-            ->orderBy('data_emissao', 'desc')
-            ->paginate(15);
+        ]);
 
-        return view('certificados.index', compact('certificados'));
+        $evento = null;
+        
+        if ($request->has('evento_id')) {
+            $eventoId = $request->get('evento_id');
+            $evento = Event::find($eventoId);
+
+            if ($evento) {
+                $query->whereHas('inscricao', function ($q) use ($eventoId) {
+                    $q->where('evento_id', $eventoId);
+                });
+            }
+        }
+
+        $certificados = $query->orderBy('data_emissao', 'desc')->paginate(15);
+
+        // Passamos a variável $evento para a view saber que estamos num contexto específico
+        return view('certificados.index', compact('certificados', 'evento'));
     }
 
     /**
@@ -150,12 +164,12 @@ class CertificadoController extends Controller
         if ($eventoId && $request->has('evento_id')) {
             return redirect()
                 ->route('certificados.create', ['evento_id' => $eventoId])
-                ->with('success', 'Certificado solicitado. O PDF será gerado em breve.');
+                ->with('success', 'Certificado solicitado.');
         }
 
         return redirect()
             ->route('certificados.index')
-            ->with('success', 'Certificado solicitado. O PDF será gerado em breve.');
+            ->with('success', 'Certificado solicitado.');
     }
 
     public function show(Certificado $certificado)

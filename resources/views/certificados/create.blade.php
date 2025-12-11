@@ -10,22 +10,35 @@
         $eventoParam = $eventoAtual ? ['evento_id' => $eventoAtual->id] : [];
     @endphp
 
-    {{-- Abas: Modelos / Emitir certificados --}}
-    <ul class="nav nav-tabs mb-3">
+    {{-- Abas --}}
+    <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
             <a class="nav-link"
                href="{{ route('certificado-modelos.index', $eventoParam) }}">
                 Modelos de certificado
             </a>
         </li>
+
         <li class="nav-item">
             <a class="nav-link active" href="#">
                 Emitir certificados
             </a>
         </li>
+
+        <li class="nav-item">
+            <a class="nav-link"
+               href="{{ route('certificados.index', $eventoParam) }}">
+                Certificados gerados
+                @isset($eventoAtual)
+                    <small class="text-muted ms-1">({{ $eventoAtual->nome }})</small>
+                @endisset
+            </a>
+        </li>
     </ul>
 
-    <div class="card shadow-sm">
+
+    {{-- CARD 1 — EMISSÃO INDIVIDUAL --}}
+    <div class="card shadow-sm mb-4">
         <div class="card-header">
             <h2 class="mb-0">
                 Gerar certificado
@@ -34,14 +47,17 @@
                 @endisset
             </h2>
             <p class="text-muted mb-0">
-                Selecione a inscrição (com check-in realizado) e o modelo de certificado.
+                Preencha os dados abaixo para gerar um certificado individual.
             </p>
         </div>
 
         <div class="card-body">
+
+            {{-- Alerts --}}
             @if(session('error'))
                 <div class="alert alert-danger">{{ session('error') }}</div>
             @endif
+
             @if(session('info'))
                 <div class="alert alert-info">{{ session('info') }}</div>
             @endif
@@ -56,52 +72,56 @@
                 </div>
             @endif
 
-            @if($eventoAtual)
+            @isset($eventoAtual)
                 <div class="alert alert-secondary py-2">
                     <strong>Evento selecionado:</strong> {{ $eventoAtual->nome }}
                 </div>
-            @endif
+            @endisset
 
             @if($modelos->isEmpty())
                 <div class="alert alert-warning">
-                    Ainda não há <strong>modelos de certificado</strong> para este contexto.
-                    Crie pelo menos um modelo antes de emitir certificados.
+                    Ainda não há modelos de certificado cadastrados.
                 </div>
             @endif
 
+            {{-- FORM INDIVIDUAL --}}
             <form action="{{ route('certificados.store') }}" method="post">
                 @csrf
 
-                @if($eventoAtual)
-                    {{-- Mantém o contexto do evento, se veio via ?evento_id= --}}
+                @isset($eventoAtual)
                     <input type="hidden" name="evento_id" value="{{ $eventoAtual->id }}">
-                @endif
+                @endisset
 
-                {{-- Inscrição (participante + evento) --}}
+
+                {{-- Inscrição --}}
                 <div class="mb-3">
                     <label class="form-label">Inscrição *</label>
                     <select name="inscricao_id" class="form-select" required>
                         <option value="">Selecione...</option>
+
                         @foreach($inscricoes as $insc)
                             @php
-                                $user   = $insc->user ?? $insc->usuario;
+                                $user = $insc->user ?? $insc->usuario;
                                 $eventoLinha = $insc->evento;
                             @endphp
+
                             <option value="{{ $insc->id }}" @selected(old('inscricao_id')==$insc->id)>
-                                [{{ $eventoLinha?->nome ?? 'Sem evento' }}] - {{ $user?->name ?? 'Sem usuário' }} ({{ $user?->email }})
+                                [{{ $eventoLinha?->nome ?? 'Sem evento' }}] - {{ $user?->name ?? 'Sem usuário' }}
+                                ({{ $user?->email }})
                             </option>
                         @endforeach
                     </select>
-                    <small class="text-muted d-block mt-1">
-                        Apenas inscrições com <strong>check-in realizado</strong> são exibidas quando o evento foi selecionado.
-                    </small>
+
+                    <small class="text-muted">Apenas inscrições com check-in realizado aparecem aqui.</small>
                 </div>
 
-                {{-- Modelo de certificado --}}
+
+                {{-- Modelo --}}
                 <div class="mb-3">
                     <label class="form-label">Modelo de certificado *</label>
                     <select name="modelo_id" class="form-select" required>
                         <option value="">Selecione...</option>
+
                         @foreach($modelos as $m)
                             <option value="{{ $m->id }}" @selected(old('modelo_id')==$m->id)>
                                 {{ $m->titulo }} — {{ $m->evento?->nome }}
@@ -110,40 +130,86 @@
                     </select>
                 </div>
 
-                {{-- Data de emissão --}}
+
+                {{-- Data --}}
                 <div class="mb-3">
                     <label class="form-label">Data de emissão</label>
-                    <input
-                        type="date"
-                        name="data_emissao"
-                        class="form-control"
-                        value="{{ old('data_emissao', now()->format('Y-m-d')) }}"
-                    >
+                    <input type="date" name="data_emissao" class="form-control"
+                           value="{{ old('data_emissao', now()->format('Y-m-d')) }}">
                 </div>
 
-                {{-- URL do certificado (opcional) --}}
+                {{-- URL --}}
                 <div class="mb-3">
                     <label class="form-label">URL do certificado (opcional)</label>
-                    <input
-                        type="text"
-                        name="url_certificado"
-                        class="form-control"
-                        value="{{ old('url_certificado') }}"
-                        placeholder="Ex: https://meusistema.com/certificados/arquivo.pdf"
-                    >
+                    <input type="text"
+                           name="url_certificado"
+                           class="form-control"
+                           placeholder="https://meusistema.com/certificados/arquivo.pdf"
+                           value="{{ old('url_certificado') }}">
                 </div>
+
 
                 <div class="d-flex justify-content-between">
                     <a href="{{ route('certificado-modelos.index', $eventoParam) }}"
                        class="btn btn-outline-secondary">
                         Voltar
                     </a>
-                    <button type="submit" class="btn btn-primary" @if($modelos->isEmpty()) disabled @endif>
+
+                    <button type="submit"
+                            class="btn btn-primary"
+                            @if($modelos->isEmpty()) disabled @endif>
                         Salvar certificado
                     </button>
                 </div>
+
             </form>
         </div>
     </div>
+
+
+
+    {{-- CARD 2 — GERAÇÃO EM MASSA --}}
+    @isset($eventoAtual)
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h2 class="mb-0">
+                Gerar em Massa
+                <small class="text-muted">— {{ $eventoAtual->nome }}</small>
+            </h2>
+            <p class="text-muted mb-0">
+                Gere certificados automaticamente para todos os participantes com check-in confirmado.
+            </p>
+        </div>
+
+        <div class="card-body">
+
+            <form action="{{ route('certificados.gerar_todos', $eventoAtual->id) }}" method="POST">
+                @csrf
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Modelo para Todos *</label>
+                    <select name="modelo_id" class="form-select" required>
+                        <option value="">Selecione o modelo...</option>
+                        @foreach($modelos as $modelo)
+                            <option value="{{ $modelo->id }}">{{ $modelo->titulo }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            @if($modelos->isEmpty()) disabled @endif>
+                        Salvar todos
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+    @endisset
+
+
 </div>
 @endsection

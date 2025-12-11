@@ -125,7 +125,7 @@ Route::middleware('auth')->prefix('app')->group(function () {
         // Certificados emitidos (admin)
         Route::resource('certificados', CertificadoController::class);
         Route::post('eventos/{evento}/certificados/gerar-todos', [CertificadoController::class, 'gerarTodosParaPresentes'])
-            ->name('eventos.certificados.gerarTodos');
+            ->name('certificados.gerar_todos');
         
         // Modelos de certificado (admin) – por evento
         Route::resource('certificado-modelos', CertificadoModeloController::class)->except(['show']);
