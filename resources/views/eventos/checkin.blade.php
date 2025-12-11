@@ -43,7 +43,7 @@
             </p>
 
             @if($modelos->count() > 0)
-                <form action="{{ route('eventos.certificados.gerarTodos', $evento) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja gerar os certificados para todos os presentes? Esta ação não pode ser desfeita.');">
+                <form action="{{ route('certificados.gerar_todos', $evento) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja gerar os certificados para todos os presentes? Esta ação não pode ser desfeita.');">
                     @csrf
                     <div class="row align-items-end">
                         <div class="col-md-8">
