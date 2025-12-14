@@ -90,6 +90,10 @@ Route::middleware('auth')->prefix('app')->group(function () {
     Route::get('/meus-certificados', [CertificadoController::class, 'meus'])
         ->name('certificados.meus');
 
+    // Rota para o participante confirmar presença via QR Code
+    Route::get('/eventos/{evento}/auto-checkin', [InscricaoController::class, 'autoCheckin'])
+        ->name('eventos.auto-checkin');
+
     // ✅ QR Code do participante
     Route::get('/inscricoes/{inscricao}/qrcode', [InscricaoController::class, 'showQrCode'])
         ->name('inscricoes.qrcode');
@@ -183,6 +187,10 @@ Route::middleware(['auth', 'can:manage-users'])
         Route::patch('usuarios/{user}/ativar',    [UserAdminController::class, 'ativar'])->name('usuarios.ativar');
         Route::patch('usuarios/{user}/desativar', [UserAdminController::class, 'desativar'])->name('usuarios.desativar');
         Route::patch('usuarios/{user}/tipo',      [UserAdminController::class, 'alterarTipo'])->name('usuarios.tipo');
+
+        // Rota para projetar o QR Code no telão
+        Route::get('/eventos/{evento}/qrcode-projetor', [EventController::class, 'exibirQrCode'])
+            ->name('eventos.qrcode.exibir');
     });
 
 /*

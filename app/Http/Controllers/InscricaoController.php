@@ -161,4 +161,34 @@ class InscricaoController extends Controller
                 $inscricao->presente ? 'Check-in realizado com sucesso!' : 'Check-in removido com sucesso!'
             );
     }
+
+    public function autoCheckin(Request $request, Event $evento)
+    {
+        // 1. Verifica se o link é válido e não expirou (Segurança)
+        if (! $request->hasValidSignature()) {
+            abort(403, 'Este QR Code expirou ou é inválido.');
+        }
+
+        $user = auth()->user();
+
+        // 2. Busca a inscrição
+        $inscricao = Inscricao::where('evento_id', $evento->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$inscricao) {
+            return redirect()->route('app.home')
+                ->with('error', 'Você não está inscrito neste evento.');
+        }
+
+        // 3. Registra a presença
+        $inscricao->update([
+            'presente' => true,
+            'checkin_at' => now()
+        ]);
+
+        return redirect()->route('meus-eventos.index')
+            ->with('success', "Check-in realizado com sucesso em: {$evento->nome}!");
+    }
+    
 }

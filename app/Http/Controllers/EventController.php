@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\URL;
 
 class EventController extends Controller
 {
@@ -181,6 +183,23 @@ class EventController extends Controller
         // 3. Redireciona de volta para a lista com uma mensagem de sucesso
         return redirect()->route('eventos.index')
                          ->with('success', 'Evento "' . $evento->nome . '" foi publicado com sucesso!');
+    }
+
+    public function exibirQrCode(Event $evento)
+    {
+        $this->authorize('update', $evento);
+
+        // Gera um link temporário e assinado (válido por 24h)        
+        $linkCheckin = URL::temporarySignedRoute(
+            'eventos.auto-checkin',
+            now()->addDay(),
+            ['evento' => $evento->id]
+        );
+
+        // Gera o QR Code com tamanho 400px
+        $qrcode = QrCode::size(400)->generate($linkCheckin);
+
+        return view('eventos.qrcode-projetor', compact('evento', 'qrcode', 'linkCheckin'));
     }
     
 }

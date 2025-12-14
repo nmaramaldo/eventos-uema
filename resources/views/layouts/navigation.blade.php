@@ -42,13 +42,7 @@
             </li>
           @endcan
 
-          @can('isAdmin')
-            <li class="nav-item">
-              <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}"
-                 href="{{ route('admin.dashboard') }}">Admin</a>
-            </li>
-          @endcan
-
+          
           {{-- Usuário autenticado (dropdown) --}}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" id="userMenu"
