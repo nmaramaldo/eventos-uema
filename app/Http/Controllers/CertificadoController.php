@@ -365,7 +365,7 @@ class CertificadoController extends Controller
     {
         $certificado = Certificado::where('hash_verificacao', $hash)
             ->with(['inscricao.user', 'inscricao.evento', 'modelo'])
-            ->firstOrFail();
+            ->first();
 
         return view('certificados.verificar', compact('certificado'));
     }

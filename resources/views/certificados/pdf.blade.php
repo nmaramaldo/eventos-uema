@@ -155,7 +155,7 @@
         </div>
         <div class="footer-right">
             Código de verificação: {{ $hash }}<br>
-            Valide em {{ rtrim(config('app.url'), '/') }}/verificar-certificado
+            Valide em: {{ route('certificados.verificar', ['hash' => $hash]) }}
         </div>
     </div>
 </div>
