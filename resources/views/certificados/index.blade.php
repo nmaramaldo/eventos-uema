@@ -39,6 +39,7 @@
                             <th class="px-3">Evento</th>
                             <th class="px-3">Modelo</th>
                             <th class="px-3">Data de emissão</th>
+                            <th class="px-3">Data de expiração</th>
                             <th class="px-3">URL</th>
                             <th class="px-3 text-end" style="width: 240px;">Ações</th>
                         </tr>
@@ -60,6 +61,9 @@
                                 <td class="px-3">{{ $modelo?->titulo ?? '—' }}</td>
                                 <td class="px-3">
                                     {{ $c->data_emissao ? \Carbon\Carbon::parse($c->data_emissao)->format('d/m/Y') : '—' }}
+                                </td>
+                                <td class="px-3">
+                                    {{ $c->expires_at ? \Carbon\Carbon::parse($c->expires_at)->format('d/m/Y') : '—' }}
                                 </td>
                                 <td class="px-3">
                                     @if(!empty($c->url_certificado))
@@ -97,7 +101,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted p-4">
+                                <td colspan="8" class="text-center text-muted p-4">
                                     Nenhum certificado encontrado.
                                 </td>
                             </tr>

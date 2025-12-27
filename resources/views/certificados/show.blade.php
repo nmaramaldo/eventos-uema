@@ -40,6 +40,11 @@
                     {{ $certificado->data_emissao ? \Carbon\Carbon::parse($certificado->data_emissao)->format('d/m/Y') : '—' }}
                 </dd>
 
+                <dt class="col-sm-3">Data de expiração</dt>
+                <dd class="col-sm-9">
+                    {{ $certificado->expires_at ? \Carbon\Carbon::parse($certificado->expires_at)->format('d/m/Y') : '—' }}
+                </dd>
+
                 <dt class="col-sm-3">URL do certificado</dt>
                 <dd class="col-sm-9">
                     @if(!empty($certificado->url_certificado))

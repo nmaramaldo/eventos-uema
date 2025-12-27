@@ -24,10 +24,12 @@ class Certificado extends Model
         'path',
         'data_emissao',
         'hash_verificacao',
+        'expires_at',
     ];
 
     protected $casts = [
         'data_emissao' => 'datetime',
+        'expires_at' => 'datetime',
     ];
 
     /**
@@ -49,6 +51,10 @@ class Certificado extends Model
 
             if (empty($m->hash_verificacao)) {
                 $m->hash_verificacao = (string) Str::uuid();
+            }
+
+            if (empty($m->expires_at)) {
+                $m->expires_at = now()->addMonth();
             }
         });
     }

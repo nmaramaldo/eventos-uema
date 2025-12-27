@@ -322,4 +322,27 @@ class CertificadoBusinessTest extends TestCase
         $this->assertEquals($modelo->id, $certificadoFromDB->modelo_id);
         $this->assertEquals($inscricao->id, $certificadoFromDB->inscricao_id);
     }
+
+    /** @test */
+    public function certificate_has_expiration_date_when_created()
+    {
+        $admin = User::factory()->create(['tipo_usuario' => 'admin']);
+        $inscricao = Inscricao::factory()->create(['presente' => true]);
+        $modelo = CertificadoModelo::factory()->create([
+            'evento_id' => $inscricao->evento_id,
+            'publicado' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->post('/app/certificados', [
+                'inscricao_id' => $inscricao->id,
+                'modelo_id' => $modelo->id,
+            ]);
+
+        $certificado = Certificado::where('inscricao_id', $inscricao->id)->first();
+
+        $this->assertNotNull($certificado);
+        $this->assertNotNull($certificado->expires_at);
+        $this->assertTrue($certificado->created_at->addMonth()->isSameDay($certificado->expires_at));
+    }
 }
