@@ -38,6 +38,9 @@ Route::prefix('eventos')->name('front.eventos.')->group(function () {
     Route::get('/{evento}', [FrontController::class, 'show'])->name('show');
 });
 
+Route::get('/validar-certificado/{hash}', [CertificadoController::class, 'verificar'])
+    ->name('certificados.verificar');
+
 /*
 |--------------------------------------------------------------------------
 | AUTENTICAÇÃO E PERFIL

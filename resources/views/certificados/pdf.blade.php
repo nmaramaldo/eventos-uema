@@ -1,95 +1,124 @@
-{{-- resources/views/certificados/pdf.blade.php --}}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
     <title>Certificado</title>
+
     <style>
         @page {
-            margin: 0cm 0cm;
+            margin: 0px;
         }
 
         body {
-            margin: 2.5cm 2.5cm;
             font-family: "DejaVu Sans", sans-serif;
-            color: #0f172a; /* azul bem escuro */
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Container principal A4 */
+        .page-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         .certificate-border {
-            border: 6px solid #1d4ed8; /* azul do sistema */
-            padding: 40px 60px;
+            position: absolute;
+            top: 1cm;
+            bottom: 1cm;
+            left: 1cm;
+            right: 1cm;
+            border: 6px solid #1d4ed8;
+            padding: 20px 40px;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-top: 20px;
         }
 
         .header img {
             height: 60px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         .title {
-            font-size: 30px;
-            letter-spacing: 0.25em;
+            font-size: 32px;
+            letter-spacing: 0.15em;
             font-weight: bold;
-            margin-top: 5px;
-            margin-bottom: 15px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
         }
 
         .subtitle {
-            font-size: 13px;
+            font-size: 14px;
             color: #475569;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
         .body-text {
-            font-size: 16px;
-            line-height: 1.6;
+            font-size: 18px;
+            line-height: 1.5;
             text-align: justify;
+            margin-bottom: 30px;
+            min-height: 150px;
         }
 
         .signatures {
-            margin-top: 60px;
+            width: 100%;
             text-align: center;
+            margin-top: 40px;
         }
 
         .signature-block {
             display: inline-block;
-            width: 45%;
-            font-size: 12px;
-            margin: 0 2%;
+            width: 40%;
+            vertical-align: top;
         }
 
         .signature-line {
-            margin-top: 40px;
             border-top: 1px solid #475569;
-            margin-bottom: 4px;
+            margin: 0 auto 5px auto;
+            width: 80%;
         }
 
-        .footer {
-            margin-top: 40px;
+        /* BLOCO DO QR CODE + VALIDAÇÃO */
+        .validation-block {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
             font-size: 10px;
             color: #6b7280;
         }
 
-        .footer-left {
-            float: left;
+        .validation-block img {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 6px;
         }
 
-        .footer-right {
-            float: right;
-            text-align: right;
+        .footer {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+            right: 40px;
+            font-size: 10px;
+            color: #6b7280;
         }
     </style>
 </head>
+
 <body>
+
 @php
     $inscricao = $certificado->inscricao;
     $user      = $inscricao?->user ?? $inscricao?->usuario;
     $evento    = $inscricao?->evento;
-    $modelo    = $certificado->modelo;
 
     $dataEmissao = $certificado->data_emissao
         ? $certificado->data_emissao->format('d/m/Y')
@@ -97,67 +126,81 @@
 
     $hash = $certificado->hash_verificacao;
 
-    // tenta usar a logomarca do evento; se não tiver, usa logo fixa da UEMA
+    $urlValidacaoTexto = isset($urlValidacao)
+        ? $urlValidacao
+        : route('certificados.verificar', $hash);
+
     $logoPath = null;
     if (!empty($evento?->logomarca_path)) {
         $tmp = public_path('storage/' . $evento->logomarca_path);
-        if (file_exists($tmp)) {
-            $logoPath = $tmp;
-        }
+        if (file_exists($tmp)) $logoPath = $tmp;
     }
-
     if (!$logoPath) {
-        // ajuste esse caminho para onde estiver a logo oficial da UEMA no seu projeto
         $tmp = public_path('images/logo-uema.png');
-        if (file_exists($tmp)) {
-            $logoPath = $tmp;
-        }
+        if (file_exists($tmp)) $logoPath = $tmp;
     }
 @endphp
 
-<div class="certificate-border">
-    <div class="header">
-        @if($logoPath)
-            <img src="{{ $logoPath }}" alt="Logo UEMA">
-        @endif
+<div class="page-container">
+    <div class="certificate-border">
 
-        <div class="title">CERTIFICADO</div>
+        <!-- HEADER -->
+        <div class="header">
+            @if($logoPath)
+                <img src="{{ $logoPath }}" alt="Logo">
+            @endif
 
-        @if($evento)
-            <div class="subtitle">
-                {{ $evento->nome }}
+            <div class="title">Certificado</div>
+
+            @if($evento)
+                <div class="subtitle">{{ $evento->nome }}</div>
+            @endif
+        </div>
+
+        <!-- TEXTO -->
+        <div class="body-text">
+            {!! $certificado->texto_renderizado !!}
+        </div>
+
+        <!-- ASSINATURAS -->
+        <div class="signatures">
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <div><strong>{{ $evento?->coordenador?->name ?? 'Coordenador(a)' }}</strong></div>
+                <div style="font-size: 12px;">Coordenação</div>
             </div>
-        @endif
-    </div>
 
-    <div class="body-text">
-        {{-- Usa o texto do modelo com as tags já substituídas --}}
-        {!! $certificado->texto_renderizado !!}
-    </div>
-
-    <div class="signatures">
-        <div class="signature-block">
-            <div class="signature-line"></div>
-            <div>{{ $evento?->coordenador?->name ?? 'Coordenador(a) do Evento' }}</div>
-            <div>Coordenação</div>
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <div><strong>{{ $evento?->owner?->name ?? 'Organizador(a)' }}</strong></div>
+                <div style="font-size: 12px;">Organização</div>
+            </div>
         </div>
 
-        <div class="signature-block">
-            <div class="signature-line"></div>
-            <div>{{ $evento?->owner?->name ?? 'Organizador(a) Responsável' }}</div>
-            <div>Organização</div>
-        </div>
-    </div>
+        <!-- QR CODE + CÓDIGO DE VALIDAÇÃO -->
+        <div class="validation-block">
+            @if(isset($qrCode))
+                <img src="data:image/svg+xml;base64,{{ $qrCode }}">
+            @endif
 
-    <div class="footer">
-        <div class="footer-left">
-            Emitido em {{ $dataEmissao }}
+            <div>Código de validação</div>
+            <div><strong>{{ $hash }}</strong></div>
+
+            <div style="margin-top: 4px;">
+                <a href="{{ $urlValidacaoTexto }}" style="color: #6b7280; text-decoration: none;">
+                    Verificar autenticidade
+                </a>
+            </div>
         </div>
-        <div class="footer-right">
-            Código de verificação: {{ $hash }}<br>
-            Valide em {{ rtrim(config('app.url'), '/') }}/verificar-certificado
+
+        <!-- FOOTER -->
+        <div class="footer">
+            Emitido em {{ $dataEmissao }}<br>
+            Plataforma Eventos UEMA
         </div>
+
     </div>
 </div>
+
 </body>
 </html>

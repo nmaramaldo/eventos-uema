@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class CertificadoController extends Controller
 {
@@ -311,21 +312,31 @@ class CertificadoController extends Controller
 
         // 3) Prepara os dados para a view
         $inscricao = $certificado->inscricao;
-        $user = $inscricao?->user ?? $inscricao?->usuario;
-        $evento = $inscricao?->evento;
-        $modelo = $certificado->modelo;
+        $user      = $inscricao?->user ?? $inscricao?->usuario;
+        $evento    = $inscricao?->evento;
+        $modelo    = $certificado->modelo;
 
         // 4) Verifica dados mínimos
         if (!$inscricao || !$user || !$modelo) {
-            // Retorna uma página de erro simples
             return response("<h2>Erro: Certificado incompleto</h2>
-                       <p>Faltam dados para gerar o certificado.</p>
-                       <a href='" . route('certificados.index') . "'>Voltar</a>");
+                             <p>Faltam dados para gerar o certificado.</p>
+                             <a href='" . route('certificados.index') . "'>Voltar</a>");
         }
 
-        // 5) Prepara o texto renderizado (se não existir)
+        // 5) Gera a URL e o QR Code de Validação       
+        $urlValidacao = route('certificados.verificar', $certificado->hash_verificacao);
+
+        // Gera o QR Code em formato SVG e converte para Base64 (melhor qualidade para PDF)
+        $qrCode = base64_encode(
+            QrCode::format('svg')
+                  ->size(150) // Tamanho em pixels
+                  ->margin(1)
+                  ->generate($urlValidacao)
+        );
+
+        // 6) Prepara o texto renderizado
         if (empty($certificado->texto_renderizado) && $modelo->corpo_html) {
-            // Substitui variáveis no modelo
+            
             $texto = str_replace(
                 ['{participante}', '{evento}', '{data}', '{carga_horaria}'],
                 [
@@ -339,27 +350,29 @@ class CertificadoController extends Controller
             $certificado->texto_renderizado = $texto;
         }
 
-        // 6) Gera o PDF
+        // 7) Gera o PDF enviando o QR Code
         $pdf = Pdf::loadView('certificados.pdf', [
-            'certificado' => $certificado,
-            'inscricao' => $inscricao,
-            'user' => $user,
-            'evento' => $evento,
-            'modelo' => $modelo,
+            'certificado'  => $certificado,
+            'inscricao'    => $inscricao,
+            'user'         => $user,
+            'evento'       => $evento,
+            'modelo'       => $modelo,
+            'qrCode'       => $qrCode,       // <--- Variável nova com a imagem
+            'urlValidacao' => $urlValidacao  // <--- Variável nova com o link texto
         ])->setPaper('a4', 'landscape');
 
-        // 7) Nome do arquivo
+        // 8) Nome do arquivo
         $nomeArquivo = 'certificado-' .
             ($user->name ? Str::slug($user->name) : 'user') . '-' .
             ($evento ? Str::slug($evento->nome) : 'evento') . '.pdf';
 
-        // 8) MOSTRA no navegador (sempre funciona)
+        // 9) MOSTRA no navegador
         return $pdf->stream($nomeArquivo);
-
-}
+    }
 
     /**
      * Verifica um certificado pelo hash.
+     * Rota Pública.
      */
     public function verificar($hash)
     {
