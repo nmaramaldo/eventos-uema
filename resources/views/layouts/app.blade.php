@@ -1,34 +1,38 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>@yield('title', 'UEMA Eventos')</title>
 
-  @vite([
-    'resources/css/app.scss',
-    'resources/js/app.js',
-    'resources/template/new-event/css/new-event.css',
-    'resources/template/new-event/js/new-event.js',
-  ])
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'UEMA Eventos')</title>
+
+    @vite(['resources/css/app.scss', 'resources/js/app.js', 'resources/template/new-event/css/new-event.css', 'resources/template/new-event/js/new-event.js'])
 </head>
+
 <body class="bg-light">
 
-  {{-- Navbar ÚNICA --}}
-  @include('layouts.navigation')
+    {{-- Navbar ÚNICA --}}
+    @include('layouts.navigation')
 
-  {{-- permite a view ajustar o padding do main --}}
-  <main class="@yield('main_class','py-4')">
-    @yield('content')
-  </main>
+    {{-- permite a view ajustar o padding do main --}}
+    <main class="@yield('main_class', 'py-4')">
+        @yield('content')
+    </main>
 
-  <footer class="mt-auto py-3 bg-light">
-    <div class="container">
-        <p class="text-center text-muted">Versão: 1.0-rc.1</p>
-    </div>
-  </footer>
+    <footer class="mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <small class="text-muted">
+                © {{ date('Y') }} UEMA Eventos —
+                <a href="/documentacao" class="text-decoration-none">Documentação do Sistema</a>
+            </small>
+        </div>
+        <div class="container">
+            <p class="text-center text-muted">Versão: 1.0-rc.1</p>
+        </div>
+    </footer>
 
-  @stack('scripts')
+    @stack('scripts')
 </body>
+
 </html>
