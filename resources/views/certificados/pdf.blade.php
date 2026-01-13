@@ -187,12 +187,13 @@
             <div><strong>{{ $hash }}</strong></div>
 
             <div style="margin-top: 4px;">
-                <a href="{{ $urlValidacaoTexto }}" style="color: #6b7280; text-decoration: none;">
+                {{-- ALTERAÇÃO AQUI: Apontando para a rota de consulta geral --}}
+                <a href="{{ route('certificados.consultar') }}" target="_blank" style="color: #1d4ed8; text-decoration: underline; font-weight: bold;">
                     Verificar autenticidade
                 </a>
             </div>
         </div>
-
+        
         <!-- FOOTER -->
         <div class="footer">
             Emitido em {{ $dataEmissao }}<br>

@@ -386,4 +386,17 @@ class CertificadoController extends Controller
 
         return view('certificados.verificar', compact('certificado'));
     }
+
+    /**
+     * Recebe o post do formulário de busca e redireciona para a validação.
+     */
+    public function buscar(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'hash' => 'required|string'
+        ]);
+
+        // Redireciona para a rota GET que já existe
+        return redirect()->route('certificados.verificar', ['hash' => $request->hash]);
+    }
 }

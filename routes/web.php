@@ -43,6 +43,14 @@ Route::view('/documentacao', 'documentacao');
 Route::get('/validar-certificado/{hash}', [CertificadoController::class, 'verificar'])
     ->name('certificados.verificar');
 
+// Tela de busca manual (formulário)
+Route::view('/validar-certificado', 'certificados.consultar')
+    ->name('certificados.consultar');
+
+// Processa a busca do formulário
+Route::post('/validar-certificado', [CertificadoController::class, 'buscar'])
+    ->name('certificados.buscar');
+
 /*
 |--------------------------------------------------------------------------
 | AUTENTICAÇÃO E PERFIL
