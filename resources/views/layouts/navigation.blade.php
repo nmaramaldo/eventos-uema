@@ -13,8 +13,8 @@
     </button>
 
     {{-- empurra TODO o conteúdo do collapse para a direita --}}
-    <div class="collapse navbar-collapse justify-content-end" id="mainNavbar">
-      <ul class="navbar-nav align-items-lg-center gap-lg-2 mb-2 mb-lg-0">
+    <div class=" navbar-collapse justify-content-end" id="mainNavbar">
+      <ul class="navbar-nav align-items-lg-center gap-lg-3 mb-3 mb-lg-1">
 
         {{-- Início (home pública) --}}
         <li class="nav-item">

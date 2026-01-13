@@ -26,7 +26,7 @@ class CertificadoController extends Controller
         ]);
 
         $evento = null;
-        
+
         if ($request->has('evento_id')) {
             $eventoId = $request->get('evento_id');
             $evento = Event::find($eventoId);
@@ -329,14 +329,14 @@ class CertificadoController extends Controller
         // Gera o QR Code em formato SVG e converte para Base64 (melhor qualidade para PDF)
         $qrCode = base64_encode(
             QrCode::format('svg')
-                  ->size(150) // Tamanho em pixels
-                  ->margin(1)
-                  ->generate($urlValidacao)
+                ->size(150) // Tamanho em pixels
+                ->margin(1)
+                ->generate($urlValidacao)
         );
 
         // 6) Prepara o texto renderizado
         if (empty($certificado->texto_renderizado) && $modelo->corpo_html) {
-            
+
             $texto = str_replace(
                 ['{participante}', '{evento}', '{data}', '{carga_horaria}'],
                 [
@@ -378,7 +378,11 @@ class CertificadoController extends Controller
     {
         $certificado = Certificado::where('hash_verificacao', $hash)
             ->with(['inscricao.user', 'inscricao.evento', 'modelo'])
-            ->firstOrFail();
+            ->first();
+
+        if (!$certificado) {
+            return view('certificados.invalido');
+        }
 
         return view('certificados.verificar', compact('certificado'));
     }
