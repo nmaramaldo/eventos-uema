@@ -1,5 +1,7 @@
 # Plataforma de Eventos UEMA (EVENTOS-UEMA)
 
+# LINK VÍDEO APRESENTAÇÃO - https://canva.link/dvrvi6dgb8wbz4p 
+
 ![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?style=for-the-badge&logo=php)
 ![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap)
